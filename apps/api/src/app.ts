@@ -94,6 +94,31 @@ export function createApp(database: Kysely<DatabaseSchema>) {
     response.status(204).end();
   });
 
+  app.post("/api/auth/password", async (request, response) => {
+    const actor = await getSessionUser(database, request);
+    if (!actor) {
+      response.status(401).json({ error: "Authentication required" });
+      return;
+    }
+    const currentPassword = typeof request.body?.currentPassword === "string" ? request.body.currentPassword : "";
+    const newPassword = typeof request.body?.newPassword === "string" ? request.body.newPassword : "";
+    if (!currentPassword || !newPassword) {
+      response.status(400).json({ error: "Current and new passwords are required" });
+      return;
+    }
+
+    const account = await database.selectFrom("users").select("passwordHash").where("id", "=", actor.id).executeTakeFirst();
+    if (!account || !verifyPassword(currentPassword, account.passwordHash)) {
+      response.status(400).json({ error: "Current password is incorrect" });
+      return;
+    }
+    await database.transaction().execute(async (transaction) => {
+      await transaction.updateTable("users").set({ passwordHash: hashPassword(newPassword) }).where("id", "=", actor.id).execute();
+      await transaction.deleteFrom("sessions").where("userId", "=", actor.id).execute();
+    });
+    response.status(204).end();
+  });
+
   app.get("/api/admin/roles", async (request, response) => {
     const actor = await getSessionUser(database, request);
     if (!actor) {
@@ -152,6 +177,42 @@ export function createApp(database: Kysely<DatabaseSchema>) {
       .orderBy("username")
       .execute();
     response.json({ users: users.map((user) => ({ ...user, isAdmin: Boolean(user.isAdmin), active: Boolean(user.active) })) });
+  });
+
+  app.patch("/api/admin/users/:userId", async (request, response) => {
+    const actor = await getSessionUser(database, request);
+    if (!actor) {
+      response.status(401).json({ error: "Authentication required" });
+      return;
+    }
+    if (!actor.isAdmin) {
+      response.status(403).json({ error: "Administrator access required" });
+      return;
+    }
+    if (typeof request.body?.active !== "boolean") {
+      response.status(400).json({ error: "An active status is required" });
+      return;
+    }
+
+    const user = await database.selectFrom("users").select(["id", "isAdmin"]).where("id", "=", request.params.userId).executeTakeFirst();
+    if (!user || user.isAdmin) {
+      response.status(404).json({ error: "User not found" });
+      return;
+    }
+    const now = new Date().toISOString();
+    await database.transaction().execute(async (transaction) => {
+      await transaction.updateTable("users").set({ active: request.body.active ? 1 : 0 }).where("id", "=", user.id).execute();
+      if (!request.body.active) {
+        await transaction.deleteFrom("sessions").where("userId", "=", user.id).execute();
+        await transaction
+          .updateTable("api_keys")
+          .set({ revokedAt: now })
+          .where("userId", "=", user.id)
+          .where("revokedAt", "is", null)
+          .execute();
+      }
+    });
+    response.status(204).end();
   });
 
   app.post("/api/admin/users", async (request, response) => {
