@@ -104,17 +104,43 @@ describe("account login", () => {
     const created = await admin.post("/api/admin/users").send({ username: "carol", roleIds: [role.body.role.id] });
     const user = request.agent(app);
     await user.post("/api/auth/login").send({ username: "carol", password: created.body.initialPassword });
+    const key = await user.post("/api/keys").send({ name: "Agent", expiresAt: null });
 
     const deactivated = await admin.patch(`/api/admin/users/${created.body.user.id}`).send({ active: false });
     const oldSession = await user.get("/api/auth/me");
     const blockedLogin = await request(app).post("/api/auth/login").send({ username: "carol", password: created.body.initialPassword });
     const reactivated = await admin.patch(`/api/admin/users/${created.body.user.id}`).send({ active: true });
     const restoredLogin = await request(app).post("/api/auth/login").send({ username: "carol", password: created.body.initialPassword });
+    const oldKey = await request(app).get("/api/capabilities").set("Authorization", `Bearer ${key.body.key.value}`);
 
     expect(deactivated.status).toBe(204);
     expect(oldSession.status).toBe(401);
     expect(blockedLogin.status).toBe(401);
     expect(reactivated.status).toBe(204);
     expect(restoredLogin.status).toBe(200);
+    expect(oldKey.status).toBe(401);
+  });
+
+  it("assigns multiple roles and prevents deleting a role that is still assigned", async () => {
+    database = new Kysely<DatabaseSchema>({
+      dialect: new SqliteDialect({ database: new Sqlite(":memory:") }),
+    });
+    await initializeDatabase(database, { adminUsername: "root", adminPassword: "administrator password" });
+    const admin = request.agent(createApp(database));
+    await admin.post("/api/auth/login").send({ username: "root", password: "administrator password" });
+    const roleA = await admin.post("/api/admin/roles").send({ name: "Analyst" });
+    const roleB = await admin.post("/api/admin/roles").send({ name: "Reviewer" });
+    const user = await admin.post("/api/admin/users").send({ username: "dana", roleIds: [roleA.body.role.id] });
+
+    const update = await admin.put(`/api/admin/users/${user.body.user.id}/roles`).send({
+      roleIds: [roleA.body.role.id, roleB.body.role.id],
+    });
+    const deleteInUse = await admin.delete(`/api/admin/roles/${roleB.body.role.id}`);
+    const noRoles = await admin.put(`/api/admin/users/${user.body.user.id}/roles`).send({ roleIds: [] });
+
+    expect(update.status).toBe(200);
+    expect(update.body.roleIds).toEqual(expect.arrayContaining([roleA.body.role.id, roleB.body.role.id]));
+    expect(deleteInUse.status).toBe(409);
+    expect(noRoles.status).toBe(400);
   });
 });

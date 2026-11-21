@@ -3,6 +3,8 @@ import express from "express";
 import type { Kysely } from "kysely";
 import type { DatabaseSchema } from "./database.js";
 import { hashPassword, verifyPassword } from "./password.js";
+import { registerApiKeyRoutes } from "./api-keys.js";
+import { registerResourceRoutes } from "./resources.js";
 
 const sessionDurationSeconds = 12 * 60 * 60;
 const sessionCookieName = "ach_session";
@@ -160,6 +162,30 @@ export function createApp(database: Kysely<DatabaseSchema>) {
     response.status(201).json({ role: { id: role.id, name: role.name, isAdmin: false } });
   });
 
+  app.delete("/api/admin/roles/:roleId", async (request, response) => {
+    const actor = await getSessionUser(database, request);
+    if (!actor) {
+      response.status(401).json({ error: "Authentication required" });
+      return;
+    }
+    if (!actor.isAdmin) {
+      response.status(403).json({ error: "Administrator access required" });
+      return;
+    }
+    const role = await database.selectFrom("roles").select(["id", "isAdmin"]).where("id", "=", request.params.roleId).executeTakeFirst();
+    if (!role) {
+      response.status(404).json({ error: "Role not found" });
+      return;
+    }
+    const assignment = await database.selectFrom("user_roles").select("userId").where("roleId", "=", role.id).executeTakeFirst();
+    if (role.isAdmin || assignment) {
+      response.status(409).json({ error: "Role cannot be deleted while assigned" });
+      return;
+    }
+    await database.deleteFrom("roles").where("id", "=", role.id).execute();
+    response.status(204).end();
+  });
+
   app.get("/api/admin/users", async (request, response) => {
     const actor = await getSessionUser(database, request);
     if (!actor) {
@@ -213,6 +239,43 @@ export function createApp(database: Kysely<DatabaseSchema>) {
       }
     });
     response.status(204).end();
+  });
+
+  app.put("/api/admin/users/:userId/roles", async (request, response) => {
+    const actor = await getSessionUser(database, request);
+    if (!actor) {
+      response.status(401).json({ error: "Authentication required" });
+      return;
+    }
+    if (!actor.isAdmin) {
+      response.status(403).json({ error: "Administrator access required" });
+      return;
+    }
+    const roleIds: string[] = Array.isArray(request.body?.roleIds)
+      ? [...new Set<string>(request.body.roleIds.filter((id: unknown) => typeof id === "string") as string[])]
+      : [];
+    if (roleIds.length === 0) {
+      response.status(400).json({ error: "At least one role is required" });
+      return;
+    }
+    const user = await database.selectFrom("users").select(["id", "isAdmin"]).where("id", "=", request.params.userId).executeTakeFirst();
+    if (!user || user.isAdmin) {
+      response.status(404).json({ error: "User not found" });
+      return;
+    }
+    const roles = await database.selectFrom("roles").select("id").where("id", "in", roleIds).where("isAdmin", "=", 0).execute();
+    if (roles.length !== roleIds.length) {
+      response.status(400).json({ error: "One or more roles are invalid" });
+      return;
+    }
+    await database.transaction().execute(async (transaction) => {
+      await transaction.deleteFrom("user_roles").where("userId", "=", user.id).execute();
+      await transaction
+        .insertInto("user_roles")
+        .values(roleIds.map((roleId) => ({ userId: user.id, roleId })))
+        .execute();
+    });
+    response.json({ roleIds });
   });
 
   app.post("/api/admin/users", async (request, response) => {
@@ -269,6 +332,9 @@ export function createApp(database: Kysely<DatabaseSchema>) {
       response.status(503).json({ status: "error", database: "unavailable" });
     }
   });
+
+  registerResourceRoutes(app, database, (request) => getSessionUser(database, request));
+  registerApiKeyRoutes(app, database, (request) => getSessionUser(database, request));
 
   return app;
 }
