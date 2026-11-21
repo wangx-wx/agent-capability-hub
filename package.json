@@ -1,0 +1,11 @@
+{
+  "name": "agent-capability-hub",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @ach/api --filter @ach/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter @ach/api test"
+  }
+}
