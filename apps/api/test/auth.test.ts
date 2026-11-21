@@ -143,4 +143,35 @@ describe("account login", () => {
     expect(deleteInUse.status).toBe(409);
     expect(noRoles.status).toBe(400);
   });
+
+  it("lets an administrator reset a user's password and revokes the user's sessions", async () => {
+    database = new Kysely<DatabaseSchema>({
+      dialect: new SqliteDialect({ database: new Sqlite(":memory:") }),
+    });
+    await initializeDatabase(database, { adminUsername: "root", adminPassword: "administrator password" });
+    const app = createApp(database);
+    const admin = request.agent(app);
+    await admin.post("/api/auth/login").send({ username: "root", password: "administrator password" });
+    const role = await admin.post("/api/admin/roles").send({ name: "Operator" });
+    const created = await admin.post("/api/admin/users").send({ username: "frank", roleIds: [role.body.role.id] });
+    const user = request.agent(app);
+    await user.post("/api/auth/login").send({ username: "frank", password: created.body.initialPassword });
+
+    const users = await admin.get("/api/admin/users");
+    const reset = await admin.post(`/api/admin/users/${created.body.user.id}/password`);
+    const oldSession = await user.get("/api/auth/me");
+    const oldPassword = await request(app).post("/api/auth/login").send({ username: "frank", password: created.body.initialPassword });
+    const newPassword = await request(app).post("/api/auth/login").send({ username: "frank", password: reset.body.newPassword });
+    const normalUser = request.agent(app);
+    await normalUser.post("/api/auth/login").send({ username: "frank", password: reset.body.newPassword });
+    const forbidden = await normalUser.get("/api/admin/users");
+
+    expect(users.body.users.find((entry: { id: string }) => entry.id === created.body.user.id).roleIds).toEqual([role.body.role.id]);
+    expect(reset.status).toBe(200);
+    expect(reset.body.newPassword).toEqual(expect.any(String));
+    expect(oldSession.status).toBe(401);
+    expect(oldPassword.status).toBe(401);
+    expect(newPassword.status).toBe(200);
+    expect(forbidden.status).toBe(403);
+  });
 });

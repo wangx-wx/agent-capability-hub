@@ -38,6 +38,22 @@ export function registerResourceRoutes(app: Express, database: Kysely<DatabaseSc
     response.json({ resources });
   });
 
+  app.get("/api/admin/roles/:roleId/resources", async (request, response) => {
+    const actor = await resolveUser(request);
+    if (denyUnlessAdmin(response, actor)) return;
+    const role = await database.selectFrom("roles").select("id").where("id", "=", request.params.roleId).executeTakeFirst();
+    if (!role) {
+      response.status(404).json({ error: "Role not found" });
+      return;
+    }
+    const grants = await database
+      .selectFrom("role_resources")
+      .select("resourceId")
+      .where("roleId", "=", role.id)
+      .execute();
+    response.json({ resourceIds: grants.map((grant) => grant.resourceId) });
+  });
+
   app.put("/api/admin/roles/:roleId/resources", async (request, response) => {
     const actor = await resolveUser(request);
     if (denyUnlessAdmin(response, actor)) return;

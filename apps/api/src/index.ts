@@ -1,6 +1,8 @@
 import { createApp } from "./app.js";
+import { loadProjectEnv } from "./env.js";
 import { createDatabase, initializeDatabase } from "./database.js";
 
+loadProjectEnv();
 const database = createDatabase();
 await initializeDatabase(database);
 const app = createApp(database);

@@ -202,7 +202,59 @@ export function createApp(database: Kysely<DatabaseSchema>) {
       .select(["id", "username", "isAdmin", "active", "createdAt"])
       .orderBy("username")
       .execute();
-    response.json({ users: users.map((user) => ({ ...user, isAdmin: Boolean(user.isAdmin), active: Boolean(user.active) })) });
+    const assignments = users.length
+      ? await database
+          .selectFrom("user_roles")
+          .select(["userId", "roleId"])
+          .where("userId", "in", users.map((user) => user.id))
+          .execute()
+      : [];
+    const roleIdsByUser = new Map<string, string[]>();
+    for (const assignment of assignments) {
+      const roleIds = roleIdsByUser.get(assignment.userId) ?? [];
+      roleIds.push(assignment.roleId);
+      roleIdsByUser.set(assignment.userId, roleIds);
+    }
+    response.json({
+      users: users.map((user) => ({
+        ...user,
+        isAdmin: Boolean(user.isAdmin),
+        active: Boolean(user.active),
+        roleIds: roleIdsByUser.get(user.id) ?? [],
+      })),
+    });
+  });
+
+  app.post("/api/admin/users/:userId/password", async (request, response) => {
+    const actor = await getSessionUser(database, request);
+    if (!actor) {
+      response.status(401).json({ error: "Authentication required" });
+      return;
+    }
+    if (!actor.isAdmin) {
+      response.status(403).json({ error: "Administrator access required" });
+      return;
+    }
+    const user = await database
+      .selectFrom("users")
+      .select(["id", "isAdmin"])
+      .where("id", "=", request.params.userId)
+      .executeTakeFirst();
+    if (!user || user.isAdmin) {
+      response.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const newPassword = randomBytes(18).toString("base64url");
+    await database.transaction().execute(async (transaction) => {
+      await transaction
+        .updateTable("users")
+        .set({ passwordHash: hashPassword(newPassword) })
+        .where("id", "=", user.id)
+        .execute();
+      await transaction.deleteFrom("sessions").where("userId", "=", user.id).execute();
+    });
+    response.json({ newPassword });
   });
 
   app.patch("/api/admin/users/:userId", async (request, response) => {
