@@ -37,7 +37,11 @@ export class McpSources {
       inputRequired: { autoFulfill: false },
     });
     const transport = service.transport === "sse"
-      ? new SSEClientTransport(new URL(service.url), { requestInit: { headers }, eventSourceInit: { fetch: (input, init) => fetch(input, { ...init, headers: new Headers({ ...Object.fromEntries(new Headers(init?.headers)), ...headers }) }) } })
+      ? new SSEClientTransport(new URL(service.url), { requestInit: { headers }, eventSourceInit: { fetch: (input, init) => {
+        const outgoing = new Headers(init?.headers);
+        for (const [name, value] of Object.entries(headers)) outgoing.set(name, value);
+        return fetch(input, { ...init, headers: outgoing });
+      } } })
       : new StreamableHTTPClientTransport(new URL(service.url), { requestInit: { headers } });
     const entry = { config, client, ready: Promise.resolve(client), connected: false };
     this.clients.set(service.id, entry);
