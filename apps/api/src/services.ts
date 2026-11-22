@@ -3,6 +3,8 @@ import { Router, type Express, type Request } from "express";
 import type { Kysely } from "kysely";
 import type { DatabaseSchema } from "./database.js";
 import type { ServiceTable } from "./service-schema.js";
+import type { McpSources } from "./mcp-sources.js";
+import { registerSyncRoutes } from "./mcp-sync.js";
 
 type ResolveUser = (request: Request) => Promise<{ id: string; isAdmin: boolean } | null>;
 
@@ -40,7 +42,7 @@ function parseService(body: Record<string, unknown>) {
   } satisfies ServiceTable & { name: string; description: string };
 }
 
-export function registerServiceRoutes(app: Express, database: Kysely<DatabaseSchema>, resolveUser: ResolveUser) {
+export function registerServiceRoutes(app: Express, database: Kysely<DatabaseSchema>, resolveUser: ResolveUser, sources: McpSources) {
   const router = Router();
   router.use(async (request, response, next) => {
     const actor = await resolveUser(request);
@@ -48,6 +50,7 @@ export function registerServiceRoutes(app: Express, database: Kysely<DatabaseSch
     if (!actor.isAdmin) { response.status(403).json({ error: "Administrator access required" }); return; }
     next();
   });
+  registerSyncRoutes(router, database, sources);
   router.get("/", async (_request, response) => {
     response.json({ services: (await serviceQuery(database).orderBy("resources.name").execute()).map(presentService) });
   });

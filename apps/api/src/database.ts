@@ -12,6 +12,8 @@ import {
 import { hashPassword } from "./password.js";
 import type { ServiceTable } from "./service-schema.js";
 import { serviceMigration } from "./service-migration.js";
+import type { ToolTable } from "./tool-schema.js";
+import { toolMigration } from "./tool-migration.js";
 
 interface UserTable {
   id: string;
@@ -74,6 +76,7 @@ export interface DatabaseSchema {
   api_keys: ApiKeyTable;
   sessions: SessionTable;
   services: ServiceTable;
+  tools: ToolTable;
 }
 
 const initialMigration: Migration = {
@@ -151,7 +154,7 @@ const initialMigration: Migration = {
 };
 
 const migrationProvider: MigrationProvider = {
-  getMigrations: async () => ({ "001_initial": initialMigration, "002_services": serviceMigration }),
+  getMigrations: async () => ({ "001_initial": initialMigration, "002_services": serviceMigration, "003_tools": toolMigration }),
 };
 
 export interface InitialAdminCredentials {
