@@ -50,4 +50,10 @@ export class McpSources {
     await Promise.allSettled([...this.clients.values()].map((entry) => entry.client.close()));
     this.clients.clear();
   }
+
+  async drop(serviceId: string) {
+    const entry = this.clients.get(serviceId);
+    this.clients.delete(serviceId);
+    await entry?.client.close();
+  }
 }

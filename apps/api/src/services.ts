@@ -6,6 +6,7 @@ import type { ServiceTable } from "./service-schema.js";
 import type { McpSources } from "./mcp-sources.js";
 import { registerSyncRoutes } from "./mcp-sync.js";
 import { registerToolTestRoutes } from "./tool-test.js";
+import { registerServiceEditRoutes } from "./service-edit.js";
 
 type ResolveUser = (request: Request) => Promise<{ id: string; isAdmin: boolean } | null>;
 
@@ -14,11 +15,11 @@ export function serviceQuery(database: Kysely<DatabaseSchema>) {
     .selectAll("services").select(["resources.name", "resources.description"]);
 }
 
-export function presentService(service: ServiceTable & { name: string; description: string }) {
-  return { ...service, enabled: Boolean(service.enabled), headers: JSON.parse(service.headers), connectionStatus: "disconnected" };
+export function presentService(service: ServiceTable & { name: string; description: string }, connectionStatus = "disconnected") {
+  return { ...service, enabled: Boolean(service.enabled), headers: JSON.parse(service.headers), connectionStatus };
 }
 
-function parseService(body: Record<string, unknown>) {
+export function parseService(body: Record<string, unknown>): ServiceTable & { name: string; description: string } {
   const name = typeof body.name === "string" ? body.name.trim() : "";
   if (!name) throw new Error("Service name is required");
   const namespace = body.namespace ?? (name.toLowerCase().replace(/[^a-z0-9_.-]+/g, "-").replace(/^-+|-+$/g, "") || "service");
@@ -53,13 +54,14 @@ export function registerServiceRoutes(app: Express, database: Kysely<DatabaseSch
   });
   registerSyncRoutes(router, database, sources);
   registerToolTestRoutes(router, database, sources);
+  registerServiceEditRoutes(router, database, sources);
   router.get("/", async (_request, response) => {
-    response.json({ services: (await serviceQuery(database).orderBy("resources.name").execute()).map(presentService) });
+    response.json({ services: (await serviceQuery(database).orderBy("resources.name").execute()).map((service) => presentService(service, sources.status(service))) });
   });
   router.get("/:id", async (request, response) => {
     const service = await serviceQuery(database).where("services.id", "=", request.params.id).executeTakeFirst();
     if (!service) { response.status(404).json({ error: "Service not found" }); return; }
-    response.json({ service: presentService(service) });
+    response.json({ service: presentService(service, sources.status(service)) });
   });
   router.post("/", async (request, response) => {
     let service: ReturnType<typeof parseService>;
