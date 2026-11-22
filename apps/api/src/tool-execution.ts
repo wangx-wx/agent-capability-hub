@@ -22,10 +22,9 @@ export async function executeTool(database: Kysely<DatabaseSchema>, sources: Mcp
   const valid = validator.getValidator(definition.inputSchema as JsonSchemaType)(args);
   if (!valid.valid) return toolError(`Invalid tool arguments: ${valid.errorMessage}`);
   try {
-    const client = await sources.connect(service);
-    return await client.callTool({ name: row.originalName, arguments: args }, {
+    return await sources.withClient(service, (client) => client.callTool({ name: row.originalName, arguments: args }, {
       timeout: service.timeoutSeconds * 1000, signal, toolDefinition: definition,
-    });
+    }), caller);
   } catch (error) {
     return toolError(error instanceof Error ? error.message : "Downstream tool call failed");
   }

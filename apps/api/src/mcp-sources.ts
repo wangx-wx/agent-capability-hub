@@ -1,6 +1,6 @@
 import { Client, SSEClientTransport, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import type { ServiceTable } from "./service-schema.js";
-import { resolveServiceCredentials } from "./credentials.js";
+import { resolveServiceCredentials, type CallerContext } from "./credentials.js";
 
 function connectionConfig(service: ServiceTable) {
   return JSON.stringify([service.url, service.transport, service.headers, service.timeoutSeconds]);
@@ -8,18 +8,20 @@ function connectionConfig(service: ServiceTable) {
 
 export class McpSources {
   private readonly clients = new Map<string, { config: string; client: Client; ready: Promise<Client>; connected: boolean }>();
+  private readonly active = new Map<Client, number>();
+  private readonly retired = new Set<Client>();
 
   status(service: ServiceTable) {
     const entry = this.clients.get(service.id);
     return entry?.config === connectionConfig(service) && entry.connected ? "connected" : "disconnected";
   }
 
-  async connect(service: ServiceTable) {
+  async connect(service: ServiceTable, caller?: CallerContext) {
     const config = connectionConfig(service);
     const existing = this.clients.get(service.id);
     if (existing?.config === config) return existing.ready;
-    if (existing) await existing.client.close();
-    const headers = resolveServiceCredentials(service);
+    if (existing) await this.drop(service.id);
+    const headers = resolveServiceCredentials(service, caller);
     const client = new Client({ name: "agent-capability-hub", version: "1.0.0" }, {
       versionNegotiation: { mode: service.transport === "sse" ? "legacy" : "auto" },
       inputRequired: { autoFulfill: false },
@@ -42,18 +44,35 @@ export class McpSources {
   }
 
   async discover(service: ServiceTable) {
-    const client = await this.connect(service);
-    return (await client.listTools(undefined, { timeout: service.timeoutSeconds * 1000, cacheMode: "refresh" })).tools;
+    return this.withClient(service, async (client) =>
+      (await client.listTools(undefined, { timeout: service.timeoutSeconds * 1000, cacheMode: "refresh" })).tools);
+  }
+
+  async withClient<T>(service: ServiceTable, action: (client: Client) => Promise<T>, caller?: CallerContext) {
+    const client = await this.connect(service, caller);
+    this.active.set(client, (this.active.get(client) ?? 0) + 1);
+    try { return await action(client); }
+    finally {
+      const remaining = (this.active.get(client) ?? 1) - 1;
+      if (remaining) this.active.set(client, remaining);
+      else {
+        this.active.delete(client);
+        if (this.retired.delete(client)) await client.close();
+      }
+    }
   }
 
   async close() {
-    await Promise.allSettled([...this.clients.values()].map((entry) => entry.client.close()));
+    await Promise.allSettled([...this.clients.values()].map((entry) => entry.client.close()).concat([...this.retired].map((client) => client.close())));
     this.clients.clear();
+    this.retired.clear();
   }
 
   async drop(serviceId: string) {
     const entry = this.clients.get(serviceId);
     this.clients.delete(serviceId);
-    await entry?.client.close();
+    if (!entry) return;
+    if (this.active.has(entry.client)) this.retired.add(entry.client);
+    else await entry.client.close();
   }
 }
