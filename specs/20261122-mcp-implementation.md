@@ -25,6 +25,8 @@
 
 ## 下一步
 
+REST 响应补充验证通过：203 文本、422 JSON 错误正文和 204 空结果保持原样，2xx 统一成功；form 数组 explode=false 使用逗号列表。可选 body 不补空对象，schema default 与试调用 example 都不填入正式参数；HTTP 失败不使 REST 服务停用。
+
 ### 10. 手工 REST 定义与统一调用
 
 - 服务登记支持 REST，`POST /api/admin/services/:id/tools` 保存管理员定义的操作；配置保存与发布不调用业务接口。
