@@ -5,6 +5,7 @@ import type { DatabaseSchema } from "./database.js";
 import type { ServiceTable } from "./service-schema.js";
 import type { McpSources } from "./mcp-sources.js";
 import { registerSyncRoutes } from "./mcp-sync.js";
+import { registerToolTestRoutes } from "./tool-test.js";
 
 type ResolveUser = (request: Request) => Promise<{ id: string; isAdmin: boolean } | null>;
 
@@ -51,6 +52,7 @@ export function registerServiceRoutes(app: Express, database: Kysely<DatabaseSch
     next();
   });
   registerSyncRoutes(router, database, sources);
+  registerToolTestRoutes(router, database, sources);
   router.get("/", async (_request, response) => {
     response.json({ services: (await serviceQuery(database).orderBy("resources.name").execute()).map(presentService) });
   });

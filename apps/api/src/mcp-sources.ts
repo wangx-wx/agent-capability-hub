@@ -22,6 +22,7 @@ export class McpSources {
     const headers = resolveServiceCredentials(service);
     const client = new Client({ name: "agent-capability-hub", version: "1.0.0" }, {
       versionNegotiation: { mode: service.transport === "sse" ? "legacy" : "auto" },
+      inputRequired: { autoFulfill: false },
     });
     const transport = service.transport === "sse"
       ? new SSEClientTransport(new URL(service.url), { requestInit: { headers }, eventSourceInit: { fetch: (input, init) => fetch(input, { ...init, headers: new Headers({ ...Object.fromEntries(new Headers(init?.headers)), ...headers }) }) } })

@@ -14,6 +14,8 @@ import type { ServiceTable } from "./service-schema.js";
 import { serviceMigration } from "./service-migration.js";
 import type { ToolTable } from "./tool-schema.js";
 import { toolMigration } from "./tool-migration.js";
+import type { AuditTable } from "./audit-schema.js";
+import { auditMigration } from "./audit-migration.js";
 
 interface UserTable {
   id: string;
@@ -77,6 +79,7 @@ export interface DatabaseSchema {
   sessions: SessionTable;
   services: ServiceTable;
   tools: ToolTable;
+  audit: AuditTable;
 }
 
 const initialMigration: Migration = {
@@ -154,7 +157,7 @@ const initialMigration: Migration = {
 };
 
 const migrationProvider: MigrationProvider = {
-  getMigrations: async () => ({ "001_initial": initialMigration, "002_services": serviceMigration, "003_tools": toolMigration }),
+  getMigrations: async () => ({ "001_initial": initialMigration, "002_services": serviceMigration, "003_tools": toolMigration, "004_audit": auditMigration }),
 };
 
 export interface InitialAdminCredentials {
@@ -172,6 +175,7 @@ export async function initializeDatabase(
   const migrator = new Migrator({ db: database, provider: migrationProvider });
   const migration = await migrator.migrateToLatest();
   if (migration.error) throw migration.error;
+  await database.updateTable("audit").set({ status: "unknown" }).where("status", "=", "running").execute();
 
   const admin = await database.selectFrom("users").select("id").where("isAdmin", "=", 1).executeTakeFirst();
   if (admin) return;

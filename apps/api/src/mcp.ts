@@ -7,6 +7,7 @@ import { resolveApiKey } from "./key-auth.js";
 import type { McpSources } from "./mcp-sources.js";
 import { listVisibleTools, presentTool } from "./tool-catalog.js";
 import type { CallerContext } from "./credentials.js";
+import { executeFormalTool } from "./tool-execution.js";
 
 export interface McpOptions {
   allowedOrigins?: string[];
@@ -22,9 +23,8 @@ export function registerMcpRoutes(app: Express, database: Kysely<DatabaseSchema>
     );
     server.setRequestHandler("tools/list", async () => ({ tools: (await listVisibleTools(database, sources, authInfo!.extra as unknown as CallerContext))
       .map((row) => { const { id, serviceId, originalName, ...tool } = presentTool(row); return tool; }) }));
-    server.setRequestHandler("tools/call", async () => ({
-      content: [{ type: "text", text: "Unknown or unavailable tool" }], isError: true,
-    }));
+    server.setRequestHandler("tools/call", async (request, context) => executeFormalTool(database, sources,
+      authInfo!.extra as unknown as CallerContext, request.params.name, request.params.arguments ?? {}, context.mcpReq.signal, server.getClientVersion()));
     return server;
   });
   const nodeHandler = toNodeHandler(handler);
