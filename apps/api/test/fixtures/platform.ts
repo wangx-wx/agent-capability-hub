@@ -3,8 +3,7 @@ import request from "supertest";
 import { createApp } from "../../src/app.js";
 import { createDatabase, initializeDatabase } from "../../src/database.js";
 
-export async function startPlatform(options?: Parameters<typeof createApp>[1]) {
-  const database = createDatabase(":memory:");
+export async function startPlatform(options?: Parameters<typeof createApp>[1], database = createDatabase(":memory:")) {
   await initializeDatabase(database, { adminUsername: "root", adminPassword: "administrator password" });
   const app = createApp(database, options);
   const admin = request.agent(app);
