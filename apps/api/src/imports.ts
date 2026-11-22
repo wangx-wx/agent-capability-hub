@@ -7,11 +7,13 @@ import type { ImportPreview } from "./import-types.js";
 import { importCurl } from "./curl-import.js";
 import { confirmImport } from "./import-confirm.js";
 import { importOpenApi } from "./openapi-import.js";
+import { importInput } from "./import-input.js";
 
 type ResolveUser = (request: Request) => Promise<{ id: string; isAdmin: boolean } | null>;
 
 export function registerImportRoutes(app: Express, database: Kysely<DatabaseSchema>, resolveUser: ResolveUser, limits: GatewayLimits) {
   const previews = new Map<string, ImportPreview>();
+  const generations = new Map<string, number>();
   const router = Router();
   router.use(async (request, response, next) => {
     const actor = await resolveUser(request);
@@ -23,14 +25,23 @@ export function registerImportRoutes(app: Express, database: Kysely<DatabaseSche
   router.post("/preview", async (request, response) => {
     const kind = request.body?.kind;
     if (kind !== "curl" && kind !== "openapi") { response.status(400).json({ error: "Unsupported import kind" }); return; }
-    const text = request.body?.text;
-    if (typeof text !== "string") { response.status(400).json({ error: "Import text is required" }); return; }
-    if (Buffer.byteLength(text) > limits.importBytes) { response.status(413).json({ error: "Import exceeds the configured byte limit" }); return; }
+    const actorId = response.locals.actorId as string;
+    const generation = (generations.get(actorId) ?? 0) + 1;
+    generations.set(actorId, generation);
+    previews.delete(actorId);
+    const controller = new AbortController();
+    const onClose = () => { if (!response.writableEnded) controller.abort(); };
+    response.once("close", onClose);
     let preview: ImportPreview;
     try {
-      preview = { id: randomUUID(), kind, groups: kind === "curl" ? importCurl(text, limits) : importOpenApi(text, limits, request.body.baseUrl) };
+      const { text, baseUrl } = await importInput(request.body, limits, controller.signal);
+      preview = { id: randomUUID(), kind, groups: kind === "curl" ? importCurl(text, limits) : importOpenApi(text, limits, baseUrl) };
       if (Buffer.byteLength(JSON.stringify(preview)) > limits.importBytes) throw new Error("Normalized import exceeds the configured byte budget");
-    } catch (error) { response.status(400).json({ error: error instanceof Error ? error.message : "Import failed" }); return; }
+    } catch (error) {
+      const status = error && typeof error === "object" && "status" in error && (error.status === 413 || error.status === 502) ? error.status : 400;
+      response.status(status).json({ error: error instanceof Error ? error.message : "Import failed" }); return;
+    } finally { response.removeListener("close", onClose); controller.abort(); }
+    if (generation !== generations.get(actorId)) { response.status(409).json({ error: "A newer import preview has replaced this request" }); return; }
     previews.set(response.locals.actorId, preview);
     response.json({ preview });
   });
