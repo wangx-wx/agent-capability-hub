@@ -10,6 +10,7 @@ import { registerServiceRoutes } from "./services.js";
 import { McpSources } from "./mcp-sources.js";
 import { registerAuditRoutes } from "./audit.js";
 import { gatewayLimits } from "./limits.js";
+import { registerImportRoutes } from "./imports.js";
 
 const sessionDurationSeconds = 12 * 60 * 60;
 const sessionCookieName = "ach_session";
@@ -395,6 +396,7 @@ export function createApp(database: Kysely<DatabaseSchema>, options: McpOptions 
   registerResourceRoutes(app, database, (request) => getSessionUser(database, request));
   registerApiKeyRoutes(app, database, (request) => getSessionUser(database, request));
   registerAuditRoutes(app, database, (request) => getSessionUser(database, request));
+  registerImportRoutes(app, database, (request) => getSessionUser(database, request), limits);
   const sources = new McpSources(limits);
   registerServiceRoutes(app, database, (request) => getSessionUser(database, request), sources);
   const closeMcp = registerMcpRoutes(app, database, sources, options);

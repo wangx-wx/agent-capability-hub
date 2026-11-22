@@ -25,6 +25,16 @@
 
 ## 下一步
 
+### 12. cURL 导入预览与管理员确认
+
+- 新增 `/api/admin/imports/preview` 和 `/api/admin/imports/confirm`，通过管理员网页会话保护。预览不保存、不执行；最新预览绑定管理员，重启／被新预览替换后拒绝旧确认。
+- 静态词法解析 URL、方法、请求头、query 和 JSON body，不使用 shell 或本机文件／环境读取。查询与业务头按字符串推断，JSON 样例推断类型但不自动推断必填约束。
+- 服务凭证与业务输入分别展示，样例仅作为可选试调用输入；数字路径保持字面路径。
+- 确认重新校验管理员编辑后的服务和操作定义，在 SQLite 事务中发布新 REST 服务与工具；不信任客户端自报的 supported 状态。
+- 导入原文和规范化预览使用部署预算，超限明确失败。
+- 接口测试从 404 开始，验证预览阶段零服务、零业务请求；确认后原样路径、字符串 001、服务凭证与 JSON 参数实际执行通过。类型检查通过。
+- OpenAPI、重导入更新和导入 UI 仍待后续切片。
+
 ### 11. 统一请求、响应和 schema 预算
 
 - 部署变量：`MCP_MAX_IMPORT_BYTES`、`MCP_MAX_REQUEST_BYTES`、`MCP_MAX_RESPONSE_BYTES`、`MCP_MAX_SCHEMA_DEPTH`、`MCP_MAX_SCHEMA_NODES`；默认分别为 10 MiB、10 MiB、10 MiB、64、100,000。
