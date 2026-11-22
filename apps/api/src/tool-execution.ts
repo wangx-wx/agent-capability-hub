@@ -7,6 +7,8 @@ import type { McpSources } from "./mcp-sources.js";
 import { listVisibleTools, toolQuery } from "./tool-catalog.js";
 import { serviceQuery } from "./services.js";
 import { finishAudit, type AuditAttempt } from "./audit-attempt.js";
+import { executeRest } from "./rest-execution.js";
+import type { RestTool } from "./rest-definition.js";
 
 const validator = new AjvJsonSchemaValidator();
 
@@ -22,6 +24,7 @@ export async function executeTool(database: Kysely<DatabaseSchema>, sources: Mcp
   const valid = validator.getValidator(definition.inputSchema as JsonSchemaType)(args);
   if (!valid.valid) return toolError(`Invalid tool arguments: ${valid.errorMessage}`);
   try {
+    if (service.kind === "rest") return await executeRest(service, definition as RestTool, args, caller, signal);
     return await sources.withClient(service, (client) => client.callTool({ name: row.originalName, arguments: args }, {
       timeout: service.timeoutSeconds * 1000, signal, toolDefinition: definition,
     }), caller);

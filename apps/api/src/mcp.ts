@@ -24,7 +24,7 @@ export function registerMcpRoutes(app: Express, database: Kysely<DatabaseSchema>
       { capabilities: { tools: {} } },
     );
     server.setRequestHandler("tools/list", async () => ({ tools: (await listVisibleTools(database, sources, authInfo!.extra as unknown as CallerContext))
-      .map((row) => { const { id, serviceId, originalName, ...tool } = presentTool(row); return tool; }) }));
+      .map((row) => { const { id, serviceId, originalName, ...tool } = presentTool(row); const { rest, example, ...publicTool } = tool as typeof tool & { rest?: unknown; example?: unknown }; return publicTool; }) }));
     server.setRequestHandler("tools/call", async (request, context) => executeFormalTool(database, sources,
       caller, request.params.name, request.params.arguments ?? {}, caller.auditAttempt, context.mcpReq.signal));
     return server;

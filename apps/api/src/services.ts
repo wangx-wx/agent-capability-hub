@@ -7,6 +7,7 @@ import type { McpSources } from "./mcp-sources.js";
 import { registerSyncRoutes } from "./mcp-sync.js";
 import { registerToolTestRoutes } from "./tool-test.js";
 import { registerServiceEditRoutes } from "./service-edit.js";
+import { registerRestToolRoutes } from "./rest-tools.js";
 
 type ResolveUser = (request: Request) => Promise<{ id: string; isAdmin: boolean } | null>;
 
@@ -24,7 +25,7 @@ export function parseService(body: Record<string, unknown>): ServiceTable & { na
   if (!name) throw new Error("Service name is required");
   const namespace = body.namespace ?? (name.toLowerCase().replace(/[^a-z0-9_.-]+/g, "-").replace(/^-+|-+$/g, "") || "service");
   if (typeof namespace !== "string" || !/^[A-Za-z0-9_.-]{1,64}$/.test(namespace)) throw new Error("Invalid service namespace");
-  if (body.kind !== "mcp") throw new Error("Unsupported service kind");
+  if (body.kind !== "mcp" && body.kind !== "rest") throw new Error("Unsupported service kind");
   const url = new URL(typeof body.url === "string" ? body.url : "");
   if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) throw new Error("Expected an HTTP(S) URL without embedded credentials");
   const headers = body.headers ?? {};
@@ -55,6 +56,7 @@ export function registerServiceRoutes(app: Express, database: Kysely<DatabaseSch
   registerSyncRoutes(router, database, sources);
   registerToolTestRoutes(router, database, sources);
   registerServiceEditRoutes(router, database, sources);
+  registerRestToolRoutes(router, database);
   router.get("/", async (_request, response) => {
     response.json({ services: (await serviceQuery(database).orderBy("resources.name").execute()).map((service) => presentService(service, sources.status(service))) });
   });
