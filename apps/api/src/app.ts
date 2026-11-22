@@ -9,6 +9,7 @@ import { registerMcpRoutes, type McpOptions } from "./mcp.js";
 import { registerServiceRoutes } from "./services.js";
 import { McpSources } from "./mcp-sources.js";
 import { registerAuditRoutes } from "./audit.js";
+import { gatewayLimits } from "./limits.js";
 
 const sessionDurationSeconds = 12 * 60 * 60;
 const sessionCookieName = "ach_session";
@@ -46,7 +47,9 @@ async function getSessionUser(database: Kysely<DatabaseSchema>, request: express
 
 export function createApp(database: Kysely<DatabaseSchema>, options: McpOptions = {}) {
   const app = express();
-  app.use(express.json());
+  const limits = gatewayLimits(options.limits);
+  app.use("/mcp", express.json({ limit: limits.requestBytes }));
+  app.use(express.json({ limit: Math.max(limits.requestBytes, limits.importBytes * 6) + 65536 }));
 
   app.post("/api/auth/login", async (request, response) => {
     const username = typeof request.body?.username === "string" ? request.body.username.trim() : "";
@@ -392,13 +395,17 @@ export function createApp(database: Kysely<DatabaseSchema>, options: McpOptions 
   registerResourceRoutes(app, database, (request) => getSessionUser(database, request));
   registerApiKeyRoutes(app, database, (request) => getSessionUser(database, request));
   registerAuditRoutes(app, database, (request) => getSessionUser(database, request));
-  const sources = new McpSources();
+  const sources = new McpSources(limits);
   registerServiceRoutes(app, database, (request) => getSessionUser(database, request), sources);
   const closeMcp = registerMcpRoutes(app, database, sources, options);
   app.locals.closeMcp = async () => { await closeMcp(); await sources.close(); };
   app.locals.startMcp = async () => {
     for (const service of await database.selectFrom("services").where("enabled", "=", 1).selectAll().execute()) sources.watch(service);
   };
+  app.use((error: { status?: number }, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
+    const status = error.status === 413 ? 413 : error.status === 400 ? 400 : 500;
+    response.status(status).json({ error: status === 413 ? "Request exceeds the configured byte limit" : status === 400 ? "Invalid request body" : "Request could not be completed" });
+  });
 
   return app;
 }

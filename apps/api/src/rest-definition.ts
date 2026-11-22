@@ -1,5 +1,6 @@
 import type { JsonSchemaType, Tool } from "@modelcontextprotocol/server";
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/server/validators/ajv";
+import { assertSchemaBudget, gatewayLimits, type GatewayLimits } from "./limits.js";
 
 export interface RestParameter {
   in: "path" | "query" | "header";
@@ -18,7 +19,7 @@ export interface RestMapping {
 }
 export type RestTool = Tool & { rest: RestMapping; example?: Record<string, unknown> };
 
-export function defineRestTool(body: Record<string, unknown>): RestTool {
+export function defineRestTool(body: Record<string, unknown>, limits: GatewayLimits = gatewayLimits()): RestTool {
   const name = typeof body.name === "string" ? body.name.trim() : "";
   if (!/^[A-Za-z0-9_.-]{1,128}$/.test(name)) throw new Error("Invalid tool name");
   const method = typeof body.method === "string" ? body.method.toUpperCase() : "";
@@ -59,6 +60,7 @@ export function defineRestTool(body: Record<string, unknown>): RestTool {
     if (body.bodyRequired === true) required.push("body");
   } else if (body.bodyRequired) throw new Error("Required body needs a schema");
   const inputSchema = { type: "object", properties, required, additionalProperties: false } as Tool["inputSchema"];
+  assertSchemaBudget(inputSchema, limits);
   new AjvJsonSchemaValidator().getValidator(inputSchema as JsonSchemaType);
   return {
     name, description: typeof body.description === "string" ? body.description : "", inputSchema,

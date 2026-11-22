@@ -5,7 +5,7 @@ export async function readLimitedText(response: Response, maximumBytes: number) 
   }
   if (!response.body) return "";
   const reader = response.body.getReader();
-  const decoder = new TextDecoder();
+  const decoder = new TextDecoder("utf-8", { fatal: true });
   const chunks: string[] = [];
   let bytes = 0;
   try {

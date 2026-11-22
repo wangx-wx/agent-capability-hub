@@ -1,6 +1,8 @@
 import { Client, ProtocolError, SdkHttpError, SSEClientTransport, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import type { ServiceTable } from "./service-schema.js";
 import { resolveServiceCredentials, type CallerContext } from "./credentials.js";
+import { gatewayLimits, type GatewayLimits } from "./limits.js";
+import { boundedFetch } from "./bounded-fetch.js";
 
 function connectionConfig(service: ServiceTable) {
   return JSON.stringify([service.url, service.transport, service.headers, service.timeoutSeconds]);
@@ -15,6 +17,7 @@ export class McpSources {
   private readonly retryCounts = new Map<string, number>();
   private readonly errors = new Map<string, { config: string; status: string }>();
   private stopped = false;
+  constructor(readonly limits: GatewayLimits = gatewayLimits()) {}
 
   status(service: ServiceTable) {
     const entry = this.clients.get(service.id);
@@ -32,17 +35,14 @@ export class McpSources {
     if (existing) await this.drop(service.id);
     if (service.enabled) this.desired.set(service.id, service);
     const headers = resolveServiceCredentials(service, caller);
+    const fetch = boundedFetch(this.limits, headers);
     const client = new Client({ name: "agent-capability-hub", version: "1.0.0" }, {
       versionNegotiation: { mode: service.transport === "sse" ? "legacy" : "auto" },
       inputRequired: { autoFulfill: false },
     });
     const transport = service.transport === "sse"
-      ? new SSEClientTransport(new URL(service.url), { requestInit: { headers }, eventSourceInit: { fetch: (input, init) => {
-        const outgoing = new Headers(init?.headers);
-        for (const [name, value] of Object.entries(headers)) outgoing.set(name, value);
-        return fetch(input, { ...init, headers: outgoing });
-      } } })
-      : new StreamableHTTPClientTransport(new URL(service.url), { requestInit: { headers } });
+      ? new SSEClientTransport(new URL(service.url), { requestInit: { headers }, eventSourceInit: { fetch }, fetch })
+      : new StreamableHTTPClientTransport(new URL(service.url), { requestInit: { headers }, fetch });
     const entry = { config, client, ready: Promise.resolve(client), connected: false };
     this.clients.set(service.id, entry);
     client.onclose = () => {

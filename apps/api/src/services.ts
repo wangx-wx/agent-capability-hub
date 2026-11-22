@@ -56,7 +56,7 @@ export function registerServiceRoutes(app: Express, database: Kysely<DatabaseSch
   registerSyncRoutes(router, database, sources);
   registerToolTestRoutes(router, database, sources);
   registerServiceEditRoutes(router, database, sources);
-  registerRestToolRoutes(router, database);
+  registerRestToolRoutes(router, database, sources.limits);
   router.get("/", async (_request, response) => {
     response.json({ services: (await serviceQuery(database).orderBy("resources.name").execute()).map((service) => presentService(service, sources.status(service))) });
   });

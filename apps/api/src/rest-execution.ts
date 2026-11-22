@@ -3,13 +3,14 @@ import type { ServiceTable } from "./service-schema.js";
 import type { RestTool } from "./rest-definition.js";
 import { resolveServiceCredentials, type CallerContext } from "./credentials.js";
 import { readLimitedText } from "./http-body.js";
+import type { GatewayLimits } from "./limits.js";
 
 function scalar(value: unknown) {
   if (value !== null && !["string", "number", "boolean"].includes(typeof value)) throw new Error("Only scalar path/query/header values are supported");
   return String(value);
 }
 
-export async function executeRest(service: ServiceTable, tool: RestTool, args: Record<string, unknown>, caller: CallerContext, signal?: AbortSignal): Promise<CallToolResult> {
+export async function executeRest(service: ServiceTable, tool: RestTool, args: Record<string, unknown>, caller: CallerContext, limits: GatewayLimits, signal?: AbortSignal): Promise<CallToolResult> {
   const url = new URL(service.url);
   let path = tool.rest.path;
   const headers = new Headers();
@@ -28,8 +29,7 @@ export async function executeRest(service: ServiceTable, tool: RestTool, args: R
   const body = Object.hasOwn(args, "body") ? JSON.stringify(args.body) : undefined;
   if (body !== undefined) headers.set("Content-Type", "application/json");
   for (const [name, value] of Object.entries(resolveServiceCredentials(service, caller))) headers.set(name, value);
-  const maximumRequestBytes = Number(process.env.MCP_MAX_REQUEST_BYTES ?? 10 * 1024 * 1024);
-  if (body && Buffer.byteLength(body) > maximumRequestBytes) throw new Error("Request exceeds the configured byte limit");
+  if (body && Buffer.byteLength(body) > limits.requestBytes) throw new Error("Request exceeds the configured byte limit");
   const timeout = AbortSignal.timeout(service.timeoutSeconds * 1000);
   const response = await fetch(url, { method: tool.rest.method, headers, body, redirect: "error", signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
   const contentType = response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() ?? "";
@@ -37,6 +37,6 @@ export async function executeRest(service: ServiceTable, tool: RestTool, args: R
     await response.body?.cancel();
     throw new Error("Binary REST responses are unsupported");
   }
-  const text = await readLimitedText(response, Number(process.env.MCP_MAX_RESPONSE_BYTES ?? 10 * 1024 * 1024));
+  const text = await readLimitedText(response, limits.responseBytes);
   return { content: text ? [{ type: "text", text }] : [], isError: !response.ok };
 }

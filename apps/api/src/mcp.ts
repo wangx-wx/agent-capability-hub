@@ -9,9 +9,11 @@ import { listVisibleTools, presentTool } from "./tool-catalog.js";
 import type { CallerContext } from "./credentials.js";
 import { executeFormalTool } from "./tool-execution.js";
 import { beginAudit, finishAudit, type AuditAttempt } from "./audit-attempt.js";
+import type { GatewayLimits } from "./limits.js";
 
 export interface McpOptions {
   allowedOrigins?: string[];
+  limits?: Partial<GatewayLimits>;
 }
 
 export function registerMcpRoutes(app: Express, database: Kysely<DatabaseSchema>, sources: McpSources, options: McpOptions = {}) {
@@ -28,8 +30,8 @@ export function registerMcpRoutes(app: Express, database: Kysely<DatabaseSchema>
     server.setRequestHandler("tools/call", async (request, context) => executeFormalTool(database, sources,
       caller, request.params.name, request.params.arguments ?? {}, caller.auditAttempt, context.mcpReq.signal));
     return server;
-  });
-  const nodeHandler = toNodeHandler(handler);
+  }, { maxRequestBodySize: sources.limits.requestBytes });
+  const nodeHandler = toNodeHandler(handler, { maxRequestBodySize: sources.limits.requestBytes });
 
   app.all("/mcp", async (request, response) => {
     if (!validateOrigin(request, response)) return;

@@ -25,6 +25,15 @@
 
 ## 下一步
 
+### 11. 统一请求、响应和 schema 预算
+
+- 部署变量：`MCP_MAX_IMPORT_BYTES`、`MCP_MAX_REQUEST_BYTES`、`MCP_MAX_RESPONSE_BYTES`、`MCP_MAX_SCHEMA_DEPTH`、`MCP_MAX_SCHEMA_NODES`；默认分别为 10 MiB、10 MiB、10 MiB、64、100,000。
+- `/mcp` 的 JSON 入口按请求预算解析，返回明确 413；解析与服务器错误统一返回无正文／凭证泄露的通用原因。
+- 原生下游 fetch 在字节流送入 SDK 前检查响应；SSE 按事件预算处理，持续连接不累计所有历史事件。静态凭证在最终 fetch 阶段注入，覆盖大小写不同的同名头。
+- REST 响应逐块限额读取，UTF-8 非法内容失败；schema 在保存、发现与执行前按迭代结构遍历检查，递归引用字符串不展开。
+- HTTP 接口失败测试先显示超大响应成功；实现后响应超限失败、入口超限 413、schema 过深 400，业务接口仅被执行一次。旧 SSE 与正式调用回归、类型检查通过。
+- 导入原文预算会在导入入口实现时使用。
+
 REST 响应补充验证通过：203 文本、422 JSON 错误正文和 204 空结果保持原样，2xx 统一成功；form 数组 explode=false 使用逗号列表。可选 body 不补空对象，schema default 与试调用 example 都不填入正式参数；HTTP 失败不使 REST 服务停用。
 
 ### 10. 手工 REST 定义与统一调用
