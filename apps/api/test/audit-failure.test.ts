@@ -35,6 +35,18 @@ it("does not send a tool call when SQLite cannot establish its audit record", as
   expect((await platform!.admin.get("/api/usage").expect(200)).body.total).toBe(0);
 });
 
+it("records malformed tool arguments rejected by the SDK without sending them downstream", async () => {
+  await prepare(new Sqlite(":memory:"));
+  const response = await fetch(platform!.url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${platform!.token}`, "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 42, method: "tools/call", params: { name: "docs__echo", arguments: "invalid" } }),
+  });
+  expect(await response.text()).toContain("error");
+  expect(source!.calls).toEqual([]);
+  expect((await platform!.admin.get("/api/usage").expect(200)).body).toEqual({ total: 1, successful: 0, failed: 1 });
+});
+
 it("returns the actual result if audit completion fails and marks it unknown on restart", async () => {
   const sqlite = new Sqlite(":memory:");
   const database = new Kysely<DatabaseSchema>({ dialect: new SqliteDialect({ database: sqlite }) });
