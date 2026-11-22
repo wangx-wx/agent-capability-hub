@@ -1,11 +1,17 @@
 import { createMcpHandler, Server } from "@modelcontextprotocol/server";
-import { toNodeHandler } from "@modelcontextprotocol/node";
+import { originValidation, toNodeHandler } from "@modelcontextprotocol/node";
 import type { Express } from "express";
 import type { Kysely } from "kysely";
 import type { DatabaseSchema } from "./database.js";
 import { resolveApiKey } from "./key-auth.js";
 
-export function registerMcpRoutes(app: Express, database: Kysely<DatabaseSchema>) {
+export interface McpOptions {
+  allowedOrigins?: string[];
+}
+
+export function registerMcpRoutes(app: Express, database: Kysely<DatabaseSchema>, options: McpOptions = {}) {
+  const validateOrigin = originValidation(options.allowedOrigins ?? (process.env.MCP_ALLOWED_ORIGINS ?? "")
+    .split(",").map((value) => value.trim()).filter(Boolean));
   const handler = createMcpHandler(() => {
     const server = new Server(
       { name: "agent-capability-hub", version: "1.0.0" },
@@ -20,6 +26,7 @@ export function registerMcpRoutes(app: Express, database: Kysely<DatabaseSchema>
   const nodeHandler = toNodeHandler(handler);
 
   app.all("/mcp", async (request, response) => {
+    if (!validateOrigin(request, response)) return;
     const actor = await resolveApiKey(database, request);
     if (!actor) {
       response.setHeader("WWW-Authenticate", "Bearer");

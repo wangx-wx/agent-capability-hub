@@ -5,7 +5,7 @@ import type { DatabaseSchema } from "./database.js";
 import { hashPassword, verifyPassword } from "./password.js";
 import { registerApiKeyRoutes } from "./api-keys.js";
 import { registerResourceRoutes } from "./resources.js";
-import { registerMcpRoutes } from "./mcp.js";
+import { registerMcpRoutes, type McpOptions } from "./mcp.js";
 
 const sessionDurationSeconds = 12 * 60 * 60;
 const sessionCookieName = "ach_session";
@@ -41,7 +41,7 @@ async function getSessionUser(database: Kysely<DatabaseSchema>, request: express
   return { id: session.id, username: session.username, isAdmin: Boolean(session.isAdmin) };
 }
 
-export function createApp(database: Kysely<DatabaseSchema>) {
+export function createApp(database: Kysely<DatabaseSchema>, options: McpOptions = {}) {
   const app = express();
   app.use(express.json());
 
@@ -388,7 +388,7 @@ export function createApp(database: Kysely<DatabaseSchema>) {
 
   registerResourceRoutes(app, database, (request) => getSessionUser(database, request));
   registerApiKeyRoutes(app, database, (request) => getSessionUser(database, request));
-  app.locals.closeMcp = registerMcpRoutes(app, database);
+  app.locals.closeMcp = registerMcpRoutes(app, database, options);
 
   return app;
 }
