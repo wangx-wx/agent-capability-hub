@@ -28,7 +28,8 @@ export function registerServiceEditRoutes(router: Router, database: Kysely<Datab
         await transaction.updateTable("services").set(row).where("id", "=", service.id).execute();
         for (const tool of renamedTools) await transaction.updateTable("resources").set({ name: tool.newName }).where("id", "=", tool.id).execute();
       });
-      if (!service.enabled || old.url !== service.url || old.headers !== service.headers || old.transport !== service.transport) await sources.drop(service.id);
+      if (!service.enabled || old.url !== service.url || old.headers !== service.headers || old.transport !== service.transport || old.timeoutSeconds !== service.timeoutSeconds) await sources.drop(service.id);
+      sources.watch(service);
       response.json({ service: presentService(service, sources.status(service)) });
     };
     if (route === "config-preview") router.post("/:id/config-preview", handle);

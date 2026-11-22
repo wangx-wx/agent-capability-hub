@@ -77,6 +77,7 @@ export function registerServiceRoutes(app: Express, database: Kysely<DatabaseSch
       }).execute();
       await transaction.insertInto("services").values(row).execute();
     });
+    sources.watch(row);
     response.status(201).json({ service: presentService(service) });
   });
   app.use("/api/admin/services", router);

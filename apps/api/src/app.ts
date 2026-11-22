@@ -396,6 +396,9 @@ export function createApp(database: Kysely<DatabaseSchema>, options: McpOptions 
   registerServiceRoutes(app, database, (request) => getSessionUser(database, request), sources);
   const closeMcp = registerMcpRoutes(app, database, sources, options);
   app.locals.closeMcp = async () => { await closeMcp(); await sources.close(); };
+  app.locals.startMcp = async () => {
+    for (const service of await database.selectFrom("services").where("enabled", "=", 1).selectAll().execute()) sources.watch(service);
+  };
 
   return app;
 }

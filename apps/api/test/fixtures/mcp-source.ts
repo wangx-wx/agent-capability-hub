@@ -3,7 +3,7 @@ import express from "express";
 import { Server, createMcpHandler, type Tool } from "@modelcontextprotocol/server";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 
-export async function startMcpSource() {
+export async function startMcpSource(port = 0) {
   const tools: Tool[] = [
     { name: "echo", description: "Echo text", inputSchema: { type: "object", properties: { text: { type: "string" } }, required: ["text"], additionalProperties: false } },
     { name: "count", description: "Return a count", inputSchema: { type: "object", properties: {} } },
@@ -27,12 +27,12 @@ export async function startMcpSource() {
   app.use(express.json());
   const nodeHandler = toNodeHandler(handler);
   app.all("/mcp", (request, response) => void nodeHandler(request, response, request.body));
-  const server = app.listen(0, "127.0.0.1");
+  const server = app.listen(port, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("Expected TCP listener");
   return {
-    tools, calls, url: `http://127.0.0.1:${address.port}/mcp`,
+    tools, calls, port: address.port, url: `http://127.0.0.1:${address.port}/mcp`,
     holdCalls() {
       let release!: () => void;
       held = new Promise<void>((resolve) => { release = resolve; });
