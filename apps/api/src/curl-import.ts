@@ -25,6 +25,11 @@ export function importCurl(text: string, limits: GatewayLimits): ImportGroup[] {
   let method = "";
   let data: string | undefined;
   const rawHeaders: Record<string, string> = Object.create(null);
+  const setHeader = (name: string, value: string) => {
+    if (Object.keys(rawHeaders).some((existing) => existing.toLowerCase() === name.toLowerCase())) throw new Error("Repeated scalar headers are unsupported; choose one explicit value");
+    new Headers([[name, value]]);
+    rawHeaders[name] = value;
+  };
   for (let index = 0; index < tokens.length; index++) {
     let flag = tokens[index];
     let inline: string | undefined;
@@ -36,7 +41,7 @@ export function importCurl(text: string, limits: GatewayLimits): ImportGroup[] {
       const header = value();
       const colon = header.indexOf(":");
       if (colon < 1) throw new Error("Invalid cURL header");
-      rawHeaders[header.slice(0, colon).trim()] = header.slice(colon + 1).trim();
+      setHeader(header.slice(0, colon).trim(), header.slice(colon + 1).trim());
     } else if (["-d", "--data", "--data-raw", "--data-binary"].includes(flag)) {
       if (data !== undefined) throw new Error("Multiple cURL data fragments are unsupported");
       data = value();
@@ -45,7 +50,7 @@ export function importCurl(text: string, limits: GatewayLimits): ImportGroup[] {
     else if (flag === "-u" || flag === "--user") {
       const credential = value();
       if (!credential.includes(":")) throw new Error("Provide the complete Basic credential; interactive password prompts are unsupported");
-      rawHeaders.Authorization = `Basic ${Buffer.from(credential).toString("base64")}`;
+      setHeader("Authorization", `Basic ${Buffer.from(credential).toString("base64")}`);
     } else if (flag === "-I" || flag === "--head") method = "HEAD";
     else if (["-s", "-S", "-sS", "--silent", "--show-error", "--compressed"].includes(flag)) continue;
     else if (flag.startsWith("-")) throw new Error(`Unsupported cURL option: ${flag}`);
@@ -53,7 +58,7 @@ export function importCurl(text: string, limits: GatewayLimits): ImportGroup[] {
   }
   const url = new URL(address);
   if (!["http:", "https:"].includes(url.protocol)) throw new Error("Only HTTP(S) cURL targets are supported");
-  if (url.username || url.password) rawHeaders.Authorization = `Basic ${Buffer.from(`${decodeURIComponent(url.username)}:${decodeURIComponent(url.password)}`).toString("base64")}`;
+  if (url.username || url.password) setHeader("Authorization", `Basic ${Buffer.from(`${decodeURIComponent(url.username)}:${decodeURIComponent(url.password)}`).toString("base64")}`);
   const headers: Record<string, string> = Object.create(null);
   const example: Record<string, unknown> = {};
   const parameters: RestParameter[] = [];
