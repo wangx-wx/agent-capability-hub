@@ -29,10 +29,35 @@ export function referencedObject(document: Record<string, unknown>, value: unkno
 
 export function schemaContext(document: Record<string, unknown>) {
   const definitions: Record<string, unknown> = Object.create(null);
+  const legacy = String(document.openapi).startsWith("3.0.");
+  const readOnly = (value: unknown, seen = new Set<string>()): boolean => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+    const node = object(value);
+    if (node.readOnly === true) return true;
+    if (typeof node.$ref === "string" && !seen.has(node.$ref)) {
+      seen.add(node.$ref);
+      if (readOnly(documentReference(document, node.$ref), seen)) return true;
+    }
+    return Array.isArray(node.allOf) && node.allOf.some((schema) => readOnly(schema, seen));
+  };
   const normalize = (value: unknown): unknown => {
     if (typeof value === "boolean") return value;
     const node = object(value);
     const result = { ...node };
+    if (legacy) {
+      if (Array.isArray(node.type)) throw new Error("OpenAPI 3.0 type arrays are unsupported");
+      if (node.nullable !== undefined && typeof node.nullable !== "boolean") throw new Error("Invalid OpenAPI nullable value");
+      if (node.nullable === true && typeof node.type === "string") result.type = [node.type, "null"];
+      delete result.nullable;
+      for (const [exclusive, bound] of [["exclusiveMinimum", "minimum"], ["exclusiveMaximum", "maximum"]]) {
+        if (node[exclusive] === undefined) continue;
+        if (typeof node[exclusive] !== "boolean") throw new Error("OpenAPI 3.0 exclusive bounds must be boolean");
+        if (node[exclusive]) {
+          if (typeof node[bound] !== "number") throw new Error("Exclusive bound requires its numeric limit");
+          result[exclusive] = node[bound];
+        } else delete result[exclusive];
+      }
+    }
     if (node.$ref !== undefined) {
       const target = documentReference(document, node.$ref);
       const key = `ref_${createHash("sha256").update(String(node.$ref)).digest("hex").slice(0, 16)}`;
@@ -50,6 +75,10 @@ export function schemaContext(document: Record<string, unknown>) {
     }
     for (const keyword of ["items", "additionalItems", "additionalProperties", "propertyNames", "contains", "not", "if", "then", "else", "unevaluatedProperties", "unevaluatedItems"]) {
       if (node[keyword] !== undefined) result[keyword] = Array.isArray(node[keyword]) ? (node[keyword] as unknown[]).map(normalize) : normalize(node[keyword]);
+    }
+    if (Array.isArray(node.required) && node.properties) {
+      const properties = object(node.properties);
+      result.required = node.required.filter((name) => !readOnly(properties[String(name)]));
     }
     return result;
   };

@@ -25,6 +25,13 @@
 
 ## 下一步
 
+### 14. OpenAPI 3.0 YAML 与请求 schema 语义
+
+- 失败测试确认 3.0 布尔 exclusive bounds 不能直接当成 2020-12 数值边界；现转换为对应的独占数值界限。
+- nullable 在源 Schema 明确声明 type 时扩展 null 类型，不扩展 enum 或删除其余约束；原本无效的 nullable 不启用默认赋值。
+- 请求方向移除 readOnly 属性的 required 要求，保留属性约束和注解。
+- 正式 YAML 夹具验证合法 null、严格最小／最大界限、enum 不自动放宽、minLength 与请求只读字段；仅一个合法调用到达 HTTP 下游，3.1 递归回归及类型检查通过。
+
 ### 13. OpenAPI JSON 基础、目标分组与递归引用
 
 - 项目级锁定 YAML 解析依赖 `yaml` 2.9.1；预览入口接受 `kind: openapi` 文本，识别 3.0.x／3.1.x，其他版本拒绝。
