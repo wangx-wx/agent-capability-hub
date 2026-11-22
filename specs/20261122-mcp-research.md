@@ -96,6 +96,10 @@ Streamable HTTP 使用 SSE 返回消息，不等于旧 HTTP+SSE 传输。服务�
 
 v2 提供 Express / Node 适配包；动态下游 schema 和统一处理器需要选择能够保留原始 JSON Schema 的 API。不能为了注册工具而把复杂 schema 粗略改成 `z.any()`。[SDK README](https://github.com/modelcontextprotocol/typescript-sdk)、[v2 文档](https://ts.sdk.modelcontextprotocol.io/v2/)
 
+补充复核：官方 SDK main 的 `5ee54ee30ddc00a914a3d981880f87fdce0e6246` 源码中，client 默认 `versionNegotiation.mode = 'legacy'`，安装 v2 不会自动选择现代协议。连接现代和旧下游时应显式评估 `mode: 'auto'`，把版本协商与 HTTP/SSE 传输选择分开。鉴权拒绝和 HTTP 超时不是旧协议的证据，不能通过捕获所有异常就回退 SSE。[默认值源码](https://github.com/modelcontextprotocol/typescript-sdk/blob/5ee54ee30ddc00a914a3d981880f87fdce0e6246/packages/client/src/client/versionNegotiation.ts#L108)、[协商指南](https://github.com/modelcontextprotocol/typescript-sdk/blob/5ee54ee30ddc00a914a3d981880f87fdce0e6246/docs/protocol-versions.md)。本轮核对了 main 源码及 npm 版本元数据，没有运行 `2.4.0` 发布包；实施时仍需按锁定版本验证。
+
+现有 Express 已执行 `express.json()`；接入 v2 Node 适配器时应传入解析后的 `req.body`，避免重复读取已耗尽的请求流。`createMcpHandler` 本身不验证 Bearer、Host 或 Origin，这些检查需要在路由入口完成。[Express 接入指南](https://github.com/modelcontextprotocol/typescript-sdk/blob/5ee54ee30ddc00a914a3d981880f87fdce0e6246/docs/serving/express.md)
+
 官方 `createMcpHandler` 默认能服务旧客户端的无状态请求，但旧 GET / DELETE 会返回 405；这不等于完整支持旧客户端有状态连接。v2 client 保留 `SSEClientTransport`，无需为下游 SSE 引入旧 SSE 服务端包。[旧客户端兼容指南](https://ts.sdk.modelcontextprotocol.io/v2/serving/legacy-clients)
 
 建议优先验证 v2 的现代上游、旧客户端无状态兼容，以及现代/旧版 Streamable HTTP 和旧 SSE 下游。若目标客户端需要旧有状态上游，再明确兼容范围。客户端配置样例要基于实测，不能仅因支持 HTTP 就宣称任意 IDE 均可连接。
@@ -106,7 +110,10 @@ v2 提供 Express / Node 适配包；动态下游 schema 和统一处理器需�
 - 平台 Key 只识别平台用户；下游服务凭证独立保存和注入。忽略调用者试图伪造的用户头；客户端名称/版本只是来源标签。
 - 列表和调用使用同一权限规则，调用前重新验证用户、Key、当前角色和工具状态。不能只在旧握手时校验，更不能只按 Session ID 放行。
 - 若接入旧有状态下游，避免多个用户共用会改变行为的同一会话。池的隔离粒度应由下游状态和凭证范围决定；至少区分服务与凭证配置，发现状态关联用户时进一步隔离。
+- 同一个用户的两个聊天也可能需要下游状态隔离。ContextForge 曾因按用户共享连接，让两个聊天共享计数器，之后改为调用方会话与下游服务共同确定连接；其测试可作为验收案例。[隔离修复](https://github.com/IBM/mcp-context-forge/issues/4205)、[本地隔离测试](/Users/wangx/workspace/aaa/github/mcp-context-forge/tests/integration/test_issue_4205_upstream_session_isolation.py:133)。2026 没有协议会话，不能为其凭空套用旧 session 映射；隐式跨调用业务状态是否支持仍需明确。
 - 下游 `tools/list` 要处理分页；超时、连接断开、配置变更和服务删除都需释放 transport/client/订阅。一个服务失败不应让所有其他工具消失。
+- 只有完整、成功的工具发现才能作为删除旧工具的依据。超时、分页失败或断线应更新服务可用性，不能被当成空目录而删除工具及授权；旧连接的迟到刷新也不能覆盖新连接结果。
+- 旧 SSE 必须测试认证头在 GET 流和 `endpoint` 指定的消息 POST 上均正确注入，且 endpoint 不能改变已允许的目标 origin。Supermux 对这两条通道有明确实现和回归测试。[SSE 实现](/Users/wangx/workspace/lyy-workspace/gitlab/ai/infrastructure/supermux/crates/runtime/src/downstream/sse.rs:36)、[SSE 测试](/Users/wangx/workspace/lyy-workspace/gitlab/ai/infrastructure/supermux/crates/gateway/tests/it/sse.rs:53)
 - HTTP 客户端必须能读 JSON 和 SSE；反向代理应避免 SSE 缓冲，并设合适的流超时。旧 SSE `endpoint`、重定向和 DNS 解析同样属于目标地址安全边界。
 - 401/403 是认证/授权失败，不能任意回退成另一种传输；现代协议的 400 错误也不能一律当作旧协议，需识别错误正文。
 - 验证 Origin/Host；为组织内网接入采用明确目标规则，而不是无条件阻断所有内网 IP，或因管理员登记就完全放弃 SSRF 检查。
@@ -126,6 +133,8 @@ v2 提供 Express / Node 适配包；动态下游 schema 和统一处理器需�
 
 协议分发注册 tools、resources、prompts 与 server/discover：[streamablehttp_transport.py:4432](/Users/wangx/workspace/aaa/github/mcp-context-forge/mcpgateway/transports/streamablehttp_transport.py:4432)。出站 HTTP/SSE 包装器：[mcp_proxy_client.py:141](/Users/wangx/workspace/aaa/github/mcp-context-forge/mcpgateway/utils/mcp_proxy_client.py:141)。工具执行既检查动作权限，又检查目标权限：[动作:2357](/Users/wangx/workspace/aaa/github/mcp-context-forge/mcpgateway/transports/streamablehttp_transport.py:2357)、[目标:5565](/Users/wangx/workspace/aaa/github/mcp-context-forge/mcpgateway/services/tool_service.py:5565)。这些分层值得借鉴；多 worker affinity、Redis 和巨型模块不属于本项目当前需求。
 
+其 SDK v2 迁移仍有明确缺口：旧反向请求回复路径在 `responder.respond()` 不存在时只记录警告并丢弃结果。因此，存在 sampling/elicitation/roots 转发入口不能证明完整链路可用；首版不能声明这些未经实现和验证的能力。[回复丢弃分支](/Users/wangx/workspace/aaa/github/mcp-context-forge/mcpgateway/services/notification_service.py:812)
+
 其自动 OpenAPI 功能是指定 URL/method 的 schema 提取，并非批量导入完整 API：[openapi_schema_router.py:36](/Users/wangx/workspace/aaa/github/mcp-context-forge/mcpgateway/routers/openapi_schema_router.py:36)。
 
 - 输入只抽 `requestBody.application/json`，输出优先 200、否则 201 的 JSON schema；没有从 operation parameters 导入路径、查询等参数。[openapi_service.py:273](/Users/wangx/workspace/aaa/github/mcp-context-forge/mcpgateway/services/openapi_service.py:273)
@@ -143,6 +152,10 @@ REST 原始 spec 与导入后的 inline 映射不同；inline 统一采用 `path
 
 其认证导入范围包含 query apiKey、Bearer 及部分 OAuth/OIDC 声明处理：[rest_import/openapi.rs:154](/Users/wangx/workspace/lyy-workspace/gitlab/ai/infrastructure/supermux/crates/domain/src/rest_import/openapi.rs:154)。这些超出本项目首期静态服务级 HTTP 头范围，不应随参考代码扩张需求。
 
+严格导入不等于完整调用校验。当前 `validate_arguments` 只递归检查 type、required、properties、items，没有执行允许存储的 enum、const、pattern、数值范围和 additionalProperties 等约束。本项目应使用支持所选方言的 JSON Schema validator，并验证失败时不产生下游 HTTP 请求。[校验函数](/Users/wangx/workspace/lyy-workspace/gitlab/ai/infrastructure/supermux/crates/domain/src/rest_import/document.rs:477)
+
+Supermux 的 REST 路径先 `resp.text().await` 读取完整正文，再在公共调用链限制返回大小，无法防止读取期间的内存消耗。响应上限应在流读取时累计字节并中止，不能只在返回 Agent 前截断。[正文读取](/Users/wangx/workspace/lyy-workspace/gitlab/ai/infrastructure/supermux/crates/runtime/src/downstream/openapi.rs:635)、[后置上限](/Users/wangx/workspace/lyy-workspace/gitlab/ai/infrastructure/supermux/crates/runtime/src/app/tool_call.rs:398)。其 SSE 同 origin 检查也不能替代所有 REST 请求、重定向与 DNS 的出站规则。
+
 ## REST API 转 MCP 的主要坑
 
 | 坑 | 具体后果 | 建议处理 |
@@ -152,7 +165,7 @@ REST 原始 spec 与导入后的 inline 映射不同；inline 统一采用 `path
 | style/explode、数组和对象编码 | `tag=a&tag=b`、`tag=a,b`、deepObject 意义不同 | 实现声明的编码子集；不支持的项在预览中阻止启用，不能静默扁平化 |
 | `$ref` 与 schema 方言 | OAS 3.0 nullable、3.1 JSON Schema、引用/组合/循环不能简单复制 | 显式版本范围；处理本地引用和方向语义；不支持的引用、方言明确报告 |
 | schema 约束处理错误 | 合并 allOf、删掉 required 或混入 readOnly 字段会改变接口契约 | 保留验证语义；请求/响应分别处理；限制深度/复杂度，避免无限展开 |
-| OAS servers 与路径拼接 | base path 丢失、operation server 覆盖遗漏、模型改变目标 URL | 管理员选择并固定目标；保留路径模板，用标准 URL 规则组合和编码 |
+| OAS servers 与路径拼接 | base path 丢失、operation server 覆盖遗漏、模型改变目标 URL | 管理员选择并固定目标；按 OpenAPI 规则追加路径，路径参数独立编码，不能直接用根路径 URL resolve |
 | 鉴权继承与覆盖 | operation security 覆盖全局、OR/AND 条件不是简单“取第一个” | 仅无鉴权/静态服务头；不支持的安全声明报告；保护凭证头不受工具参数覆盖 |
 | 状态与正文 | 204 没有 JSON；合法 2xx 被判错；202 不代表业务已完成 | HTTP 成功范围与业务成功分开；204/文本/JSON 显式处理，异步任务另设计 |
 | 内容类型与 schema | JSON 顶层数组、null、文本、二进制、multipart 不能统一 JSON.stringify | 明确结果契约和内容类型；outputSchema 仅用于真实匹配的结构化结果 |
@@ -164,6 +177,10 @@ REST 原始 spec 与导入后的 inline 映射不同；inline 统一采用 `path
 | 文档获取与不可信文本 | URL/$ref 重定向、DNS 变化带来 SSRF；说明/结果可含提示注入 | 限制抓取、解引用和重定向；目标按部署策略允许；说明与结果作为数据处理 |
 
 不能通过丢弃不支持字段得到一个“导入成功”的宽松工具。预览至少需要操作清单、参数来源、schema、目标、凭证处理、告警/阻止原因和冲突。具体 UI 与输入形式仍待实现规格确认。[OpenAPI 参数与 schema 规范](https://spec.openapis.org/oas/v3.1.1.html)
+
+具体 URL 例子：`servers.url = https://api.example.com/v1`、路径 `/users/{id}` 的目标是 `/v1/users/{id}`；`new URL('/users/42', base)` 却会丢掉 `/v1`。OpenAPI 的路径是追加到 server URL，不是相对 URL 解析。参数继承也按 `(name, in)` 合并，operation 可覆盖 path item 的同位置同名参数，不能按名称单独去重。[OpenAPI 3.1.2 Paths 与 Operation 规范](https://spec.openapis.org/oas/v3.1.2.html#paths-object)
+
+导入原文的字节上限不足以保护解析过程。JSON/YAML 重复键、多文档、别名展开、引用深度与节点数需要明确策略；循环或未解析外部 `$ref` 应报告不支持，不能替换成 `{}` 放宽输入约束。本期建议禁止自动联网解引用，所有导入来源复用相同预算与校验路径。[Supermux 解析边界](/Users/wangx/workspace/lyy-workspace/gitlab/ai/infrastructure/supermux/crates/domain/src/rest_import/parse.rs:109)
 
 结构化结果还存在跨版本差异：2026 的 structuredContent 可以是任意 JSON 值，旧版常以对象为契约。REST 数组结果若需兼容旧端，应使用稳定包装结构并同步 outputSchema，不能只改返回值。新 schema 也不能向旧端未经验证地透传。
 
@@ -191,3 +208,5 @@ REST 原始 spec 与导入后的 inline 映射不同；inline 统一采用 `path
 ## 调研资料
 
 官方协议、SDK README/指南及 npm 元数据快照存放在 `dev-artifacts/mcp-research-20261121/`，来源及 SHA-256 见 [sources.json](/Users/wangx/workspace/aaa/github/agent-capability-hub/dev-artifacts/mcp-research-20261121/sources.json)。网页和 main 分支会变动，文中协议结论以本轮保存的版本资料为依据。未对参考仓库运行服务或集成测试，不把源码存在等同于互操作验证通过。
+
+补充复核资料位于 [root-verification/README.md](/Users/wangx/workspace/aaa/github/agent-capability-hub/dev-artifacts/mcp-research-20261121/root-verification/README.md)，逐项来源和 SHA-256 另存于该目录的 `sources.json`。本次补充增加 SDK 默认协议、请求流适配、同用户会话隔离、迁移缺口、完整 schema 校验、流读取上限及 OpenAPI URL 追加语义；不改变已确认产品范围。

@@ -1,0 +1,142 @@
+{
+  "researchDates": [
+    "2026-11-21",
+    "2026-11-22"
+  ],
+  "sdkMainCommit": "5ee54ee30ddc00a914a3d981880f87fdce0e6246",
+  "method": "Read-only documentation and source inspection; no reference services or SDK runtime tests were run.",
+  "sources": [
+    {
+      "file": "mcp-authorization.md",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization.md",
+      "bytes": 26106,
+      "sha256": "d9ff08c88f8867670ee32a0c74859c3f5b7d4276953f66f48c68858253bab0e6"
+    },
+    {
+      "file": "mcp-changelog.md",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/changelog.md",
+      "bytes": 12427,
+      "sha256": "3467bcf82d52282332abf50efe0b5875d36f84a9a47205413e97018b4b4c8ea1"
+    },
+    {
+      "file": "mcp-streamable-http.md",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http.md",
+      "bytes": 31362,
+      "sha256": "30ca2d07f890ed66bede3cf6703af5169fe3fa86fb8e06c602c001bd743ce798"
+    },
+    {
+      "file": "mcp-tools.md",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools.md",
+      "bytes": 24981,
+      "sha256": "30b2db501261cfeeaa621d26d55890f53fa38a3012f740a1a3fcdb02e0316cba"
+    },
+    {
+      "file": "openapi-3.1.2.md",
+      "url": "https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/versions/3.1.2.md",
+      "bytes": 221889,
+      "sha256": "7e30126d65acad53523f420e522d34edb3717af225aae727e73a522abc227da7"
+    },
+    {
+      "file": "typescript-client-connect.md",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/docs/clients/connect.md",
+      "bytes": 6011,
+      "sha256": "d340fb9bd6edc146edba702454045eba0905ba5dc978d31122df38466abb1513"
+    },
+    {
+      "file": "typescript-client-latest.json",
+      "url": "https://registry.npmjs.org/@modelcontextprotocol/client/latest",
+      "bytes": 5481,
+      "sha256": "29a5c76d3c9faa91069233ebe1baa2ef3aebf7d5bafeb61f96429cafc84261ad"
+    },
+    {
+      "file": "typescript-client-source.ts",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/5ee54ee30ddc00a914a3d981880f87fdce0e6246/packages/client/src/client/client.ts",
+      "bytes": 136178,
+      "sha256": "6b7e01a55e8e423c5bc86acd01e1239d9c76d5e17a0f40f451d06211806c2dd5"
+    },
+    {
+      "file": "typescript-express.md",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/docs/serving/express.md",
+      "bytes": 4961,
+      "sha256": "04734b3dff426328d4c8fc438339b04cb1cca9350704f1a15f1d5949862e6b48"
+    },
+    {
+      "file": "typescript-from-json-schema.ts",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/5ee54ee30ddc00a914a3d981880f87fdce0e6246/packages/server/src/fromJsonSchema.ts",
+      "bytes": 600,
+      "sha256": "20834b0555314baec006f8ceb61c090b6af7add10dc6aaeed0888f463893f3f0"
+    },
+    {
+      "file": "typescript-gateway.md",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/5ee54ee30ddc00a914a3d981880f87fdce0e6246/docs/advanced/gateway.md",
+      "bytes": 13591,
+      "sha256": "0ce3c43e164f8abab6a063301027ac388de40072fa0b8df776d4b751f9d9f62d"
+    },
+    {
+      "file": "typescript-legacy-clients.md",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/docs/serving/legacy-clients.md",
+      "bytes": 7266,
+      "sha256": "8040a5e5580f4924552905e7519be2f475178ea4d70962f201e1e3dafb466ce2"
+    },
+    {
+      "file": "typescript-main-commit.json",
+      "url": "https://api.github.com/repos/modelcontextprotocol/typescript-sdk/commits/main",
+      "bytes": 45362,
+      "sha256": "ec76eec69ed3d9daeed22473c5627650c5bbcd7d3ee255421368559ec1a2f1dd"
+    },
+    {
+      "file": "typescript-protocol-versions.md",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/docs/protocol-versions.md",
+      "bytes": 15847,
+      "sha256": "6b6af3ac7139e9280f6cfc3b32e840267377839a3d943ed336683f46e3a40b98"
+    },
+    {
+      "file": "typescript-sdk-latest.json",
+      "url": "https://registry.npmjs.org/@modelcontextprotocol/sdk/latest",
+      "bytes": 6524,
+      "sha256": "49e6b1f452d55977dbaf77f9a3e7282f4740449a27e64e7d3fca76fe67757d36"
+    },
+    {
+      "file": "typescript-sdk-readme.md",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/README.md",
+      "bytes": 8317,
+      "sha256": "d776beb7f1d0194da22e7d82cc84d869bd4ae805ba5d8283b69f57dec5b64dd6"
+    },
+    {
+      "file": "typescript-server-latest.json",
+      "url": "https://registry.npmjs.org/@modelcontextprotocol/server/latest",
+      "bytes": 5622,
+      "sha256": "916410c72115be4e39bc2aa00ad4b0e4fce91b15addce2031bb94bb01e625ab1"
+    },
+    {
+      "file": "typescript-server-tools.md",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/docs/servers/tools.md",
+      "bytes": 11099,
+      "sha256": "964e42bebdb04535f5813c4ea04bc022b42a46bcb0b9b9e26ca41d44eb8abb00"
+    },
+    {
+      "file": "typescript-serving-http.md",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/docs/serving/http.md",
+      "bytes": 8293,
+      "sha256": "05d2e81f2fed3bc6b1ca6bde531697b8bb74d1c2ef2394c5560167cd6187801b"
+    },
+    {
+      "file": "typescript-sse-client.ts",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/5ee54ee30ddc00a914a3d981880f87fdce0e6246/packages/client/src/client/sse.ts",
+      "bytes": 23160,
+      "sha256": "99c5ed72feeaaca2196a6a0957c32ffab36c27c6b7422874ffab5beb9a8a7eeb"
+    },
+    {
+      "file": "typescript-version-negotiation.ts",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/5ee54ee30ddc00a914a3d981880f87fdce0e6246/packages/client/src/client/versionNegotiation.ts",
+      "bytes": 31648,
+      "sha256": "0e30e69cd7dba669af267770c155624bc2d4c1d3c15e99a5764f9406141bdc8b"
+    },
+    {
+      "file": "typescript-wire-schemas.md",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/docs/advanced/wire-schemas.md",
+      "bytes": 7334,
+      "sha256": "ae2edfeb920ff498ebd6d1477d8417714e406dd36c55729e1aba81dcbf1dfd96"
+    }
+  ]
+}
