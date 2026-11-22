@@ -6,6 +6,7 @@ import type { GatewayLimits } from "./limits.js";
 import type { ImportPreview } from "./import-types.js";
 import { importCurl } from "./curl-import.js";
 import { confirmImport } from "./import-confirm.js";
+import { importOpenApi } from "./openapi-import.js";
 
 type ResolveUser = (request: Request) => Promise<{ id: string; isAdmin: boolean } | null>;
 
@@ -20,13 +21,14 @@ export function registerImportRoutes(app: Express, database: Kysely<DatabaseSche
     next();
   });
   router.post("/preview", async (request, response) => {
-    if (request.body?.kind !== "curl") { response.status(400).json({ error: "Unsupported import kind" }); return; }
+    const kind = request.body?.kind;
+    if (kind !== "curl" && kind !== "openapi") { response.status(400).json({ error: "Unsupported import kind" }); return; }
     const text = request.body?.text;
     if (typeof text !== "string") { response.status(400).json({ error: "Import text is required" }); return; }
     if (Buffer.byteLength(text) > limits.importBytes) { response.status(413).json({ error: "Import exceeds the configured byte limit" }); return; }
     let preview: ImportPreview;
     try {
-      preview = { id: randomUUID(), kind: "curl", groups: importCurl(text, limits) };
+      preview = { id: randomUUID(), kind, groups: kind === "curl" ? importCurl(text, limits) : importOpenApi(text, limits, request.body.baseUrl) };
       if (Buffer.byteLength(JSON.stringify(preview)) > limits.importBytes) throw new Error("Normalized import exceeds the configured byte budget");
     } catch (error) { response.status(400).json({ error: error instanceof Error ? error.message : "Import failed" }); return; }
     previews.set(response.locals.actorId, preview);

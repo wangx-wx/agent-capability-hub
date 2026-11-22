@@ -16,6 +16,7 @@ export interface RestMapping {
   parameters: RestParameter[];
   bodySchema?: JsonSchemaType | boolean;
   bodyRequired?: boolean;
+  schemaDefs?: Record<string, unknown>;
 }
 export type RestTool = Tool & { rest: RestMapping; example?: Record<string, unknown> };
 
@@ -59,12 +60,14 @@ export function defineRestTool(body: Record<string, unknown>, limits: GatewayLim
     properties.body = body.bodySchema;
     if (body.bodyRequired === true) required.push("body");
   } else if (body.bodyRequired) throw new Error("Required body needs a schema");
-  const inputSchema = { type: "object", properties, required, additionalProperties: false } as Tool["inputSchema"];
+  const schemaDefs = body.schemaDefs as Record<string, unknown> | undefined;
+  if (schemaDefs !== undefined && (!schemaDefs || typeof schemaDefs !== "object" || Array.isArray(schemaDefs))) throw new Error("Invalid local schema definitions");
+  const inputSchema = { type: "object", properties, required, additionalProperties: false, ...(schemaDefs ? { $defs: schemaDefs } : {}) } as Tool["inputSchema"];
   assertSchemaBudget(inputSchema, limits);
   new AjvJsonSchemaValidator().getValidator(inputSchema as JsonSchemaType);
   return {
     name, description: typeof body.description === "string" ? body.description : "", inputSchema,
-    rest: { method, path, parameters: parameters as RestParameter[], bodySchema: body.bodySchema as JsonSchemaType | boolean | undefined, bodyRequired: body.bodyRequired === true },
+    rest: { method, path, parameters: parameters as RestParameter[], bodySchema: body.bodySchema as JsonSchemaType | boolean | undefined, bodyRequired: body.bodyRequired === true, schemaDefs },
     example: body.example as Record<string, unknown> | undefined,
   };
 }
