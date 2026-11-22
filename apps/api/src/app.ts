@@ -6,6 +6,7 @@ import { hashPassword, verifyPassword } from "./password.js";
 import { registerApiKeyRoutes } from "./api-keys.js";
 import { registerResourceRoutes } from "./resources.js";
 import { registerMcpRoutes, type McpOptions } from "./mcp.js";
+import { registerServiceRoutes } from "./services.js";
 
 const sessionDurationSeconds = 12 * 60 * 60;
 const sessionCookieName = "ach_session";
@@ -388,6 +389,7 @@ export function createApp(database: Kysely<DatabaseSchema>, options: McpOptions 
 
   registerResourceRoutes(app, database, (request) => getSessionUser(database, request));
   registerApiKeyRoutes(app, database, (request) => getSessionUser(database, request));
+  registerServiceRoutes(app, database, (request) => getSessionUser(database, request));
   app.locals.closeMcp = registerMcpRoutes(app, database, options);
 
   return app;

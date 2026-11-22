@@ -10,6 +10,8 @@ import {
   type MigrationProvider,
 } from "kysely";
 import { hashPassword } from "./password.js";
+import type { ServiceTable } from "./service-schema.js";
+import { serviceMigration } from "./service-migration.js";
 
 interface UserTable {
   id: string;
@@ -71,6 +73,7 @@ export interface DatabaseSchema {
   role_resources: RoleResourceTable;
   api_keys: ApiKeyTable;
   sessions: SessionTable;
+  services: ServiceTable;
 }
 
 const initialMigration: Migration = {
@@ -148,7 +151,7 @@ const initialMigration: Migration = {
 };
 
 const migrationProvider: MigrationProvider = {
-  getMigrations: async () => ({ "001_initial": initialMigration }),
+  getMigrations: async () => ({ "001_initial": initialMigration, "002_services": serviceMigration }),
 };
 
 export interface InitialAdminCredentials {
