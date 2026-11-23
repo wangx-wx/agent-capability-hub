@@ -10,6 +10,7 @@ export function registerServiceEditRoutes(router: Router, database: Kysely<Datab
     const handle: RequestHandler = async (request, response) => {
       const old = await serviceQuery(database).where("services.id", "=", request.params.id).executeTakeFirst();
       if (!old) { response.status(404).json({ error: "Service not found" }); return; }
+      if (request.body?.kind !== undefined && request.body.kind !== old.kind) { response.status(400).json({ error: "Service kind cannot be changed; register a new service" }); return; }
       let service: ReturnType<typeof parseService>;
       try { service = { ...parseService({ ...presentService(old), ...request.body }), id: old.id }; }
       catch (error) { response.status(400).json({ error: error instanceof Error ? error.message : "Invalid service" }); return; }
