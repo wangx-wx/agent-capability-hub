@@ -11,10 +11,15 @@ export async function startMcpSource(port = 0) {
   const calls: Array<{ name: string; arguments: unknown; authorization: string | undefined }> = [];
   let held: Promise<void> | undefined;
   let started: (() => void) | undefined;
+  let discoveryHold: { wait: Promise<void>; started: () => void } | undefined;
   const handler = createMcpHandler(() => {
     const server = new Server({ name: "controlled-source", version: "1.0.0" }, { capabilities: { tools: {} } });
-    server.setRequestHandler("tools/list", async (request) => request.params?.cursor
-      ? { tools: tools.slice(1) } : { tools: tools.slice(0, 1), nextCursor: tools.length > 1 ? "page-2" : undefined });
+    server.setRequestHandler("tools/list", async (request) => {
+      const result = request.params?.cursor ? { tools: tools.slice(1) } : { tools: tools.slice(0, 1), nextCursor: tools.length > 1 ? "page-2" : undefined };
+      const hold = discoveryHold;
+      if (!request.params?.cursor && hold) { discoveryHold = undefined; hold.started(); await hold.wait; }
+      return result;
+    });
     server.setRequestHandler("tools/call", async (request, context) => {
       calls.push({ name: request.params.name, arguments: request.params.arguments, authorization: context.http?.req?.headers.get("authorization") ?? undefined });
       started?.();
@@ -33,6 +38,14 @@ export async function startMcpSource(port = 0) {
   if (!address || typeof address === "string") throw new Error("Expected TCP listener");
   return {
     tools, calls, port: address.port, url: `http://127.0.0.1:${address.port}/mcp`,
+    holdDiscovery() {
+      let release!: () => void;
+      let notify!: () => void;
+      const wait = new Promise<void>((resolve) => { release = resolve; });
+      const started = new Promise<void>((resolve) => { notify = resolve; });
+      discoveryHold = { wait, started: notify };
+      return { started, release };
+    },
     holdCalls() {
       let release!: () => void;
       held = new Promise<void>((resolve) => { release = resolve; });

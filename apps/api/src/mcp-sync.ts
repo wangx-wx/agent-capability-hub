@@ -10,7 +10,8 @@ import { assertSchemaBudget } from "./limits.js";
 import { assertHeaderDeclarations } from "./mcp-tool-schema.js";
 
 export function registerSyncRoutes(router: Router, database: Kysely<DatabaseSchema>, sources: McpSources) {
-  const previews = new Map<string, { serviceId: string; fingerprint: string; tools: Tool[] }>();
+  const previews = new Map<string, { id: string; serviceId: string; fingerprint: string; tools: Tool[] }>();
+  const generations = new Map<string, string>();
   const fingerprint = async (serviceId: string) => JSON.stringify([
     await serviceQuery(database).where("services.id", "=", serviceId).executeTakeFirst(),
     await toolQuery(database).where("tools.serviceId", "=", serviceId).orderBy("tools.originalName").execute(),
@@ -22,6 +23,9 @@ export function registerSyncRoutes(router: Router, database: Kysely<DatabaseSche
   router.post("/:id/sync-preview", async (request, response) => {
     const service = await serviceQuery(database).where("services.id", "=", request.params.id).executeTakeFirst();
     if (!service) { response.status(404).json({ error: "Service not found" }); return; }
+    const generation = randomUUID();
+    generations.set(service.id, generation);
+    previews.delete(service.id);
     const originalFingerprint = await fingerprint(service.id);
     let tools: Tool[];
     try {
@@ -37,12 +41,12 @@ export function registerSyncRoutes(router: Router, database: Kysely<DatabaseSche
         names.add(tool.name);
       }
     } catch (error) { response.status(502).json({ error: error instanceof Error ? error.message : "Discovery failed" }); return; }
-    if (originalFingerprint !== await fingerprint(service.id)) { response.status(409).json({ error: "Service changed during discovery; synchronize again" }); return; }
+    if (generations.get(service.id) !== generation || originalFingerprint !== await fingerprint(service.id)) { response.status(409).json({ error: "Service or latest preview changed during discovery; synchronize again" }); return; }
     const existing = await toolQuery(database).where("tools.serviceId", "=", service.id).execute();
     const byName = new Map(existing.map((tool) => [tool.originalName, tool]));
     const named = (tool: Tool) => ({ ...tool, originalName: tool.name, name: `${service.namespace}__${tool.name}` });
     const id = randomUUID();
-    previews.set(id, { serviceId: service.id, fingerprint: originalFingerprint, tools });
+    previews.set(service.id, { id, serviceId: service.id, fingerprint: originalFingerprint, tools });
     response.json({ preview: { id, serviceId: service.id,
       added: tools.filter((tool) => !byName.has(tool.name)).map(named),
       modified: tools.filter((tool) => byName.has(tool.name) && byName.get(tool.name)!.definition !== JSON.stringify(tool)).map((tool) => ({ ...named(tool), id: byName.get(tool.name)!.id })),
@@ -50,8 +54,8 @@ export function registerSyncRoutes(router: Router, database: Kysely<DatabaseSche
     } });
   });
   router.post("/:id/sync-confirm", async (request, response) => {
-    const preview = previews.get(request.body?.previewId);
-    if (!preview || preview.serviceId !== request.params.id || preview.fingerprint !== await fingerprint(request.params.id)) {
+    const preview = previews.get(request.params.id);
+    if (!preview || preview.id !== request.body?.previewId || preview.fingerprint !== await fingerprint(request.params.id)) {
       response.status(409).json({ error: "Preview is stale; synchronize again" }); return;
     }
     await database.transaction().execute(async (transaction) => {
@@ -73,7 +77,8 @@ export function registerSyncRoutes(router: Router, database: Kysely<DatabaseSche
         await transaction.deleteFrom("resources").where("id", "=", tool.id).execute();
       }
     });
-    previews.delete(request.body.previewId);
+    previews.delete(request.params.id);
     response.json({ tools: (await toolQuery(database).where("tools.serviceId", "=", preview.serviceId).orderBy("tools.originalName").execute()).map(presentTool) });
   });
+  return (serviceId: string) => { previews.delete(serviceId); generations.delete(serviceId); };
 }

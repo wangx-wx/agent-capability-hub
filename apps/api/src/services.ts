@@ -55,9 +55,9 @@ export function registerServiceRoutes(app: Express, database: Kysely<DatabaseSch
     response.locals.actorId = actor.id;
     next();
   });
-  registerSyncRoutes(router, database, sources);
+  const forgetSync = registerSyncRoutes(router, database, sources);
   registerToolTestRoutes(router, database, sources);
-  registerServiceEditRoutes(router, database, sources);
+  registerServiceEditRoutes(router, database, sources, forgetSync);
   registerRestToolRoutes(router, database, sources.limits);
   registerToolEditRoutes(router, database, sources.limits);
   router.post("/:id/test-connection", async (request, response) => {

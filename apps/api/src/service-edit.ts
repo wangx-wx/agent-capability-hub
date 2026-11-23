@@ -5,7 +5,7 @@ import type { McpSources } from "./mcp-sources.js";
 import { parseService, presentService, serviceQuery } from "./services.js";
 import { toolQuery } from "./tool-catalog.js";
 
-export function registerServiceEditRoutes(router: Router, database: Kysely<DatabaseSchema>, sources: McpSources) {
+export function registerServiceEditRoutes(router: Router, database: Kysely<DatabaseSchema>, sources: McpSources, forgetSync: (serviceId: string) => void) {
   for (const route of ["config-preview", "save"] as const) {
     const handle: RequestHandler = async (request, response) => {
       const old = await serviceQuery(database).where("services.id", "=", request.params.id).executeTakeFirst();
@@ -28,6 +28,7 @@ export function registerServiceEditRoutes(router: Router, database: Kysely<Datab
         await transaction.updateTable("services").set(row).where("id", "=", service.id).execute();
         for (const tool of renamedTools) await transaction.updateTable("resources").set({ name: tool.newName }).where("id", "=", tool.id).execute();
       });
+      forgetSync(service.id);
       if (!service.enabled || old.url !== service.url || old.headers !== service.headers || old.transport !== service.transport || old.timeoutSeconds !== service.timeoutSeconds) await sources.drop(service.id);
       sources.watch(service);
       response.json({ service: presentService(service, sources.status(service)) });
@@ -42,6 +43,7 @@ export function registerServiceEditRoutes(router: Router, database: Kysely<Datab
       await transaction.deleteFrom("resources").where("parentId", "=", service.id).execute();
       await transaction.deleteFrom("resources").where("id", "=", service.id).execute();
     });
+    forgetSync(service.id);
     await sources.drop(service.id);
     response.status(204).end();
   });
