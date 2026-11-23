@@ -73,3 +73,7 @@ REST 操作身份：手工创建及 PATCH/PUT 禁止与同服务其他工具重�
 验证日志及文件行数保存在 `dev-artifacts/mcp-verification-20261123/`，浏览器截图位于 `dev-artifacts/mcp-browser-20261123/results/`。Claude Code 2.1.325、Codex CLI 0.171.0 的接入语法已通过各自 CLI 帮助和当前官方文档核对；未改写本机 Agent 配置，也未安装全局依赖。
 
 已补齐 `.env.example`、README 和部署/操作/接入文档。继续保留用户指定分支，未推送、未合入 main；整体工作已可供确认。
+
+## 合入与推送授权
+
+2026-11-23：用户明确要求“合入 main 分支，然后 push”，已确认整体交付。本次授权替代上面的等待确认状态；将保留功能分支提交历史，通过合并提交集成到 main，并正常推送 origin/main，不使用强制推送。
