@@ -1,16 +1,16 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import express from "express";
 import type { Kysely } from "kysely";
-import type { DatabaseSchema } from "./database.js";
-import { hashPassword, verifyPassword } from "./password.js";
-import { registerApiKeyRoutes } from "./api-keys.js";
-import { registerResourceRoutes } from "./resources.js";
-import { registerMcpRoutes, type McpOptions } from "./mcp.js";
-import { registerServiceRoutes } from "./services.js";
-import { McpSources } from "./mcp-sources.js";
-import { registerAuditRoutes } from "./audit.js";
-import { gatewayLimits } from "./limits.js";
-import { registerImportRoutes } from "./imports.js";
+import type { DatabaseSchema } from "./database/schema.js";
+import { hashPassword, verifyPassword } from "./modules/auth/password.js";
+import { registerApiKeyRoutes } from "./modules/api-keys/routes.js";
+import { registerResourceRoutes } from "./modules/resources/routes.js";
+import { registerMcpRoutes, type McpOptions } from "./modules/mcp/gateway.js";
+import { registerServiceRoutes } from "./modules/services/routes.js";
+import { McpSources } from "./modules/mcp/sources.js";
+import { registerAuditRoutes } from "./modules/audit/routes.js";
+import { gatewayLimits } from "./config/limits.js";
+import { registerImportRoutes } from "./modules/imports/routes.js";
 
 const sessionDurationSeconds = 12 * 60 * 60;
 const sessionCookieName = "ach_session";

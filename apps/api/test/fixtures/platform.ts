@@ -1,7 +1,8 @@
 import { once } from "node:events";
 import request from "supertest";
 import { createApp } from "../../src/app.js";
-import { createDatabase, initializeDatabase } from "../../src/database.js";
+import { createDatabase } from "../../src/database/client.js";
+import { initializeDatabase } from "../../src/database/initialize.js";
 
 export async function startPlatform(options?: Parameters<typeof createApp>[1], database = createDatabase(":memory:")) {
   await initializeDatabase(database, { adminUsername: "root", adminPassword: "administrator password" });

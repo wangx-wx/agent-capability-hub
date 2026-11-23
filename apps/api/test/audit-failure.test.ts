@@ -2,7 +2,8 @@ import Sqlite from "better-sqlite3";
 import { Kysely, SqliteDialect } from "kysely";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { afterEach, expect, it, vi } from "vitest";
-import { initializeDatabase, type DatabaseSchema } from "../src/database.js";
+import { initializeDatabase } from "../src/database/initialize.js";
+import type { DatabaseSchema } from "../src/database/schema.js";
 import { startPlatform } from "./fixtures/platform.js";
 import { startMcpSource } from "./fixtures/mcp-source.js";
 

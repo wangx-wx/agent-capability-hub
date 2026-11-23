@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { Kysely, SqliteDialect } from "kysely";
 import request from "supertest";
 import { createApp } from "../src/app.js";
-import { initializeDatabase } from "../src/database.js";
-import type { DatabaseSchema } from "../src/database.js";
+import { initializeDatabase } from "../src/database/initialize.js";
+import type { DatabaseSchema } from "../src/database/schema.js";
 
 describe("account login", () => {
   let database: Kysely<DatabaseSchema> | undefined;

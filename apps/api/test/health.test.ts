@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { Kysely, SqliteDialect } from "kysely";
 import request from "supertest";
 import { createApp } from "../src/app.js";
-import type { DatabaseSchema } from "../src/database.js";
+import type { DatabaseSchema } from "../src/database/schema.js";
 
 describe("GET /api/health", () => {
   let database: Kysely<DatabaseSchema> | undefined;
