@@ -333,6 +333,10 @@
   margin-bottom: 20px;
 }
 
+.import-result-links {
+  margin-top: 12px;
+}
+
 /* Pagination */
 .pagination-bar {
   display: flex;

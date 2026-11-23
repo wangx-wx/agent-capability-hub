@@ -28,6 +28,7 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
   const [editor, setEditor] = useState<{ initial?: Service } | null>(null);
   const [onboarding, setOnboarding] = useState<{ target?: Service } | null>(null);
   const [message, setMessage] = useState("");
+  const [importedServices, setImportedServices] = useState<Service[]>([]);
   const [tools, setTools] = useState<RegisteredTool[]>([]);
   const [preview, setPreview] = useState<SyncPreview | null>(null);
   const [busy, setBusy] = useState(false);
@@ -109,6 +110,8 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
     try {
       await api(`/api/admin/services/${selected.id}`, { method: "DELETE" });
       setSelected(null);
+      setMessage("");
+      setImportedServices([]);
       await load();
     } catch (reason) {
       setError(errorMessage(reason));
@@ -137,6 +140,7 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
             setOnboarding({});
             setEditor(null);
             setMessage("");
+            setImportedServices([]);
             setError("");
           }}>
             <Plus size={14} strokeWidth={1.5} />
@@ -145,7 +149,29 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
         </div>
       </div>
 
-      {message && <p role="status" className="status-banner service-notice">{message}</p>}
+      {message && (
+        <div role="status" className="status-banner service-notice">
+          <p>{message}</p>
+          {importedServices.length > 1 && (
+            <div className="button-row import-result-links" role="group" aria-label="本次导入的服务">
+              {importedServices.map((service) => (
+                <button
+                  key={service.id}
+                  type="button"
+                  className="btn btn-secondary"
+                  aria-pressed={selected?.id === service.id}
+                  onClick={() => {
+                    setSelected(service);
+                    void load(service.id);
+                  }}
+                >
+                  查看 {service.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {onboarding ? (
         <ServiceOnboarding
           target={onboarding.target}
@@ -153,6 +179,7 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
           onSaved={(saved, imported) => {
             setOnboarding(null);
             setSelected(saved[0]);
+            setImportedServices(imported ? saved : []);
             setMessage(imported ? `导入完成，共保存 ${saved.length} 个服务。请在角色与授权页面分配工具权限。` : "服务已保存，可继续配置工具。");
             void load(saved[0].id);
           }}
@@ -263,6 +290,7 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
                       onClick={() => {
                         setOnboarding({ target: selected });
                         setMessage("");
+                        setImportedServices([]);
                         setError("");
                       }}
                     >
