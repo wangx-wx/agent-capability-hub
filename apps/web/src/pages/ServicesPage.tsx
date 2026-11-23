@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plug, Plus, Power, RefreshCw, Trash2 } from "lucide-react";
+import { FileInput, Pencil, Plug, Plus, Power, RefreshCw, Trash2 } from "lucide-react";
 import { api, errorMessage } from "../lib/api";
 import { ServiceEditor } from "../components/ServiceEditor";
 import { ServiceOnboarding } from "../components/ServiceOnboarding";
@@ -26,7 +26,7 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
   const [services, setServices] = useState<Service[]>([]);
   const [selected, setSelected] = useState<Service | null>(null);
   const [editor, setEditor] = useState<{ initial?: Service } | null>(null);
-  const [onboarding, setOnboarding] = useState(false);
+  const [onboarding, setOnboarding] = useState<{ target?: Service } | null>(null);
   const [message, setMessage] = useState("");
   const [tools, setTools] = useState<RegisteredTool[]>([]);
   const [preview, setPreview] = useState<SyncPreview | null>(null);
@@ -134,7 +134,7 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
             <span>刷新服务</span>
           </button>
           <button type="button" className="btn btn-primary" onClick={() => {
-            setOnboarding(true);
+            setOnboarding({});
             setEditor(null);
             setMessage("");
             setError("");
@@ -148,9 +148,10 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
       {message && <p role="status" className="status-banner service-notice">{message}</p>}
       {onboarding ? (
         <ServiceOnboarding
-          onCancel={() => setOnboarding(false)}
+          target={onboarding.target}
+          onCancel={() => setOnboarding(null)}
           onSaved={(saved, imported) => {
-            setOnboarding(false);
+            setOnboarding(null);
             setSelected(saved[0]);
             setMessage(imported ? `导入完成，共保存 ${saved.length} 个服务。请在角色与授权页面分配工具权限。` : "服务已保存，可继续配置工具。");
             void load(saved[0].id);
@@ -254,6 +255,20 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
                         <span>同步工具</span>
                       </button>
                     </>
+                  )}
+                  {selected.kind === "rest" && (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setOnboarding({ target: selected });
+                        setMessage("");
+                        setError("");
+                      }}
+                    >
+                      <FileInput size={13} strokeWidth={1.5} />
+                      <span>导入工具</span>
+                    </button>
                   )}
                   <button
                     type="button"

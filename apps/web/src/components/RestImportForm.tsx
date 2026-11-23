@@ -33,8 +33,9 @@ const changeLabels: Record<string, string> = {
   unchanged: "保持",
 };
 
-export function RestImportForm({ format: kind, onSaved }: {
+export function RestImportForm({ format: kind, targetService, onSaved }: {
   format: "openapi" | "curl";
+  targetService?: Service;
   onSaved: (services: Service[]) => void;
 }) {
   const [mode, setMode] = useState("text");
@@ -42,8 +43,15 @@ export function RestImportForm({ format: kind, onSaved }: {
   const [url, setUrl] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [file, setFile] = useState<{ name: string; content: string } | null>(null);
-  const [services, setServices] = useState<Service[]>([]);
-  const [targets, setTargets] = useState<Record<string, string>>({});
+  const [services, setServices] = useState<Service[]>(targetService ? [targetService] : []);
+  const [targets, setTargets] = useState<Record<string, string>>(() => {
+    if (!targetService) return {};
+    const targetUrl = new URL(targetService.url);
+    return {
+      [targetService.url]: targetService.id,
+      ...(targetUrl.pathname === "/" ? { [targetUrl.origin]: targetService.id } : {}),
+    };
+  });
   const [previewId, setPreviewId] = useState("");
   const [groups, setGroups] = useState<DraftGroup[]>([]);
   const [error, setError] = useState("");

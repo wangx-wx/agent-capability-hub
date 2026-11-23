@@ -4,19 +4,22 @@ import { connectionKindLabels, type Service } from "../types";
 import { ServiceEditor } from "./ServiceEditor";
 import { RestImportForm } from "./RestImportForm";
 
-export function ServiceOnboarding({ onSaved, onCancel }: {
+export function ServiceOnboarding({ target, onSaved, onCancel }: {
+  target?: Service;
   onSaved: (services: Service[], imported: boolean) => void;
   onCancel: () => void;
 }) {
-  const [kind, setKind] = useState<Service["kind"] | null>(null);
-  const [method, setMethod] = useState<"manual" | "openapi" | "curl">("manual");
+  const [kind, setKind] = useState<Service["kind"] | null>(target?.kind ?? null);
+  const [method, setMethod] = useState<"manual" | "openapi" | "curl">(target ? "openapi" : "manual");
 
   return (
     <div>
       <div className="subsection-heading">
         <div>
-          <h2>选择接入方式</h2>
-          <p className="muted">接入后统一作为 MCP 工具提供给 Agent。</p>
+          <h2>{target ? `导入工具：${target.name}` : "选择接入方式"}</h2>
+          <p className="muted">
+            {target ? "与当前服务目标一致时预选更新，其他目标分别保存；确认前请审阅保存方式。" : "接入后统一作为 MCP 工具提供给 Agent。"}
+          </p>
         </div>
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           <ArrowLeft size={14} strokeWidth={1.5} />
@@ -24,7 +27,7 @@ export function ServiceOnboarding({ onSaved, onCancel }: {
         </button>
       </div>
 
-      <div className="connection-options" role="group" aria-label="接入方式">
+      {!target && <div className="connection-options" role="group" aria-label="接入方式">
         {(["mcp", "rest"] as const).map((value) => {
           const Icon = value === "mcp" ? Plug : Braces;
           return (
@@ -42,11 +45,11 @@ export function ServiceOnboarding({ onSaved, onCancel }: {
             </button>
           );
         })}
-      </div>
+      </div>}
 
       {kind === "rest" && (
         <div className="button-row connection-methods" role="group" aria-label="REST 接入方式">
-          {(["manual", "openapi", "curl"] as const).map((value) => (
+          {(["manual", "openapi", "curl"] as const).filter((value) => !target || value !== "manual").map((value) => (
             <button
               key={value}
               type="button"
@@ -69,7 +72,7 @@ export function ServiceOnboarding({ onSaved, onCancel }: {
         />
       )}
       {kind === "rest" && method !== "manual" && (
-        <RestImportForm key={method} format={method} onSaved={(services) => onSaved(services, true)} />
+        <RestImportForm key={method} format={method} targetService={target} onSaved={(services) => onSaved(services, true)} />
       )}
     </div>
   );
