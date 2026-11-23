@@ -404,9 +404,9 @@ export function createApp(database: Kysely<DatabaseSchema>, options: McpOptions 
   app.locals.startMcp = async () => {
     for (const service of await database.selectFrom("services").where("enabled", "=", 1).selectAll().execute()) sources.watch(service);
   };
-  app.use((error: { status?: number }, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
-    const status = error.status === 413 ? 413 : error.status === 400 ? 400 : 500;
-    response.status(status).json({ error: status === 413 ? "Request exceeds the configured byte limit" : status === 400 ? "Invalid request body" : "Request could not be completed" });
+  app.use((error: { status?: number; code?: string }, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
+    const status = error.code === "SQLITE_CONSTRAINT_UNIQUE" ? 409 : error.status === 413 ? 413 : error.status === 400 ? 400 : 500;
+    response.status(status).json({ error: status === 409 ? "Public tool name or namespace already exists" : status === 413 ? "Request exceeds the configured byte limit" : status === 400 ? "Invalid request body" : "Request could not be completed" });
   });
 
   return app;

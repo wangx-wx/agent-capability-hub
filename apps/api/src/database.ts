@@ -16,6 +16,7 @@ import type { ToolTable } from "./tool-schema.js";
 import { toolMigration } from "./tool-migration.js";
 import type { AuditTable } from "./audit-schema.js";
 import { auditMigration } from "./audit-migration.js";
+import { toolNameMigration } from "./tool-name-migration.js";
 
 interface UserTable {
   id: string;
@@ -157,7 +158,7 @@ const initialMigration: Migration = {
 };
 
 const migrationProvider: MigrationProvider = {
-  getMigrations: async () => ({ "001_initial": initialMigration, "002_services": serviceMigration, "003_tools": toolMigration, "004_audit": auditMigration }),
+  getMigrations: async () => ({ "001_initial": initialMigration, "002_services": serviceMigration, "003_tools": toolMigration, "004_audit": auditMigration, "005_tool_names": toolNameMigration }),
 };
 
 export interface InitialAdminCredentials {
