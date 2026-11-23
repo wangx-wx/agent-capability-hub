@@ -13,6 +13,8 @@ cp .env.example .env
 
 [接入与部署说明](specs/20261123-mcp-operations.md)包含 MCP/REST 管理流程、OpenAPI/cURL 导入、Claude Code/Codex 配置、环境变量及接口索引。[接入规格](specs/20261122-mcp-rest-integration.md)记录本轮确认的行为边界。
 
+[后端目录约定](specs/20261123-backend-directory-structure.md)说明业务模块、数据库迁移、配置、运维脚本和测试的文件归属。
+
 ```sh
 pnpm test
 pnpm test:e2e

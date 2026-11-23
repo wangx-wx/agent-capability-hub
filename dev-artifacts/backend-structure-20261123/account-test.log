@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/wangx/workspace/aaa/github/agent-capability-hub-backend-structure/apps/api
+
+ ✓ test/capabilities.test.ts (1 test) 181ms
+ ✓ test/auth.test.ts (6 tests) 760ms
+
+ Test Files  2 passed (2)
+      Tests  7 passed (7)
+   Start at  11:55:43
+   Duration  1.40s (transform 198ms, setup 0ms, collect 955ms, tests 941ms, environment 0ms, prepare 70ms)

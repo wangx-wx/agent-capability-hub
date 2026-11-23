@@ -1,5 +1,6 @@
 import { createApp } from "../../src/app.js";
-import { createDatabase, initializeDatabase } from "../../src/database.js";
+import { createDatabase } from "../../src/database/client.js";
+import { initializeDatabase } from "../../src/database/initialize.js";
 import { startMcpSource } from "./mcp-source.js";
 import { startRestSource } from "./rest-source.js";
 
