@@ -1,0 +1,2 @@
+PASS: pnpm start serves the compiled API and initializes the database.
+PASS: pnpm admin:reset-password runs the relocated script, replaces the password and revokes sessions.

@@ -1,0 +1,2 @@
+PASS: runtime smoke process and temporary SQLite files removed.
+PASS: original main worktree is clean and remains at a0884d3.

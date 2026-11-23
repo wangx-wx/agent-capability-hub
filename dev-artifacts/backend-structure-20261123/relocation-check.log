@@ -1,0 +1,6 @@
+PASS: 39 relocated source bodies unchanged, except required .env path depth.
+PASS: all database table types, migrations, initialization and connection bodies unchanged.
+PASS: auth, role and user handlers and session behavior unchanged.
+PASS: all 41 test bodies and assertions unchanged; only module, fixture and process paths moved.
+Largest production file: apps/api/src/modules/users/routes.ts (198 lines).
+app.ts: 54 lines.
