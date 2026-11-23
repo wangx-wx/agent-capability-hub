@@ -27,7 +27,7 @@ export async function executeRest(service: ServiceTable, tool: RestTool, args: R
   }
   url.pathname = url.pathname.replace(/\/$/, "") + path;
   const body = Object.hasOwn(args, "body") ? JSON.stringify(args.body) : undefined;
-  if (body !== undefined) headers.set("Content-Type", "application/json");
+  if (body !== undefined) headers.set("Content-Type", tool.rest.bodyContentType ?? "application/json");
   for (const [name, value] of Object.entries(resolveServiceCredentials(service, caller))) headers.set(name, value);
   if (body && Buffer.byteLength(body) > limits.requestBytes) throw new Error("Request exceeds the configured byte limit");
   const timeout = AbortSignal.timeout(service.timeoutSeconds * 1000);

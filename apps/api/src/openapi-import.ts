@@ -88,6 +88,7 @@ export function importOpenApi(text: string, limits: GatewayLimits, baseUrl?: str
           const media = object(content[mediaType]);
           definition.bodySchema = context.normalize(media.schema ?? {});
           definition.bodyRequired = body.required;
+          definition.bodyContentType = mediaType;
           const value = media.example;
           if (value !== undefined) example.body = value;
         }
