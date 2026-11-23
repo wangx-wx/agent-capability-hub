@@ -25,6 +25,7 @@ export async function executeRest(service: ServiceTable, tool: RestTool, args: R
       else for (const item of value) url.searchParams.append(parameter.name, scalar(item));
     } else url.searchParams.append(parameter.name, scalar(value));
   }
+  if (path.split("/").some((segment) => [".", ".."].includes(segment.replace(/%2e/gi, ".")))) throw new Error("Dot path segments cannot be represented without URL normalization");
   url.pathname = url.pathname.replace(/\/$/, "") + path;
   const body = Object.hasOwn(args, "body") ? JSON.stringify(args.body) : undefined;
   if (body !== undefined) headers.set("Content-Type", tool.rest.bodyContentType ?? "application/json");
