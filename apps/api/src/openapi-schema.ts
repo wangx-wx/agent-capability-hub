@@ -41,7 +41,7 @@ export function referencedObject(document: Record<string, unknown>, value: unkno
 
 export function schemaContext(document: Record<string, unknown>) {
   const definitions: Record<string, unknown> = Object.create(null);
-  const referenceKeys = new Map<unknown, string>();
+  const referenceKeys = new Map<unknown, Map<string, string>>();
   const legacy = String(document.openapi).startsWith("3.0.");
   const readOnly = (value: unknown, seen = new Set<string>()): boolean => {
     if (!value || typeof value !== "object" || Array.isArray(value)) return false;
@@ -53,10 +53,21 @@ export function schemaContext(document: Record<string, unknown>) {
     }
     return Array.isArray(node.allOf) && node.allOf.some((schema) => readOnly(schema, seen));
   };
-  const normalize = (value: unknown, inheritedDialect: unknown = document.jsonSchemaDialect): unknown => {
+  const readOnlyNames = (value: unknown, seen = new Set<unknown>()): Set<string> => {
+    if (!value || typeof value !== "object" || Array.isArray(value) || seen.has(value)) return new Set();
+    seen = new Set(seen).add(value);
+    const node = object(value);
+    const names = new Set(Object.entries(node.properties ? object(node.properties) : {}).filter(([, schema]) => readOnly(schema)).map(([name]) => name));
+    const branches = [...(Array.isArray(node.allOf) ? node.allOf : []), ...(node.$ref ? [documentReference(document, node.$ref)] : [])];
+    for (const branch of branches) for (const name of readOnlyNames(branch, seen)) names.add(name);
+    return names;
+  };
+  const normalize = (value: unknown, inheritedDialect: unknown = document.jsonSchemaDialect, inheritedReadOnly = new Set<string>()): unknown => {
     if (typeof value === "boolean") return value;
     const node = object(value);
     const result = { ...node };
+    const omittedRequired = new Set([...inheritedReadOnly, ...readOnlyNames(value)]);
+    delete result.$anchor;
     if (node.$id !== undefined || node.$dynamicRef !== undefined || node.$dynamicAnchor !== undefined) throw new Error("Scoped schema IDs and dynamic references are unsupported");
     const dialect = node.$schema ?? inheritedDialect;
     if (!legacy && dialect !== undefined && !["https://json-schema.org/draft/2020-12/schema", "https://spec.openapis.org/oas/3.1/dialect/base"].includes(String(dialect))) throw new Error("Unsupported JSON Schema dialect");
@@ -84,9 +95,12 @@ export function schemaContext(document: Record<string, unknown>) {
     }
     if (node.$ref !== undefined) {
       const target = documentReference(document, node.$ref);
-      const key = referenceKeys.get(target) ?? `ref_${createHash("sha256").update(String(node.$ref)).digest("hex").slice(0, 16)}`;
-      referenceKeys.set(target, key);
-      if (!Object.hasOwn(definitions, key)) { definitions[key] = {}; definitions[key] = normalize(target); }
+      const context = JSON.stringify([...omittedRequired].sort());
+      const keys = referenceKeys.get(target) ?? new Map<string, string>();
+      referenceKeys.set(target, keys);
+      const key = keys.get(context) ?? `ref_${createHash("sha256").update(String(node.$ref) + context).digest("hex").slice(0, 16)}`;
+      keys.set(context, key);
+      if (!Object.hasOwn(definitions, key)) { definitions[key] = {}; definitions[key] = normalize(target, document.jsonSchemaDialect, omittedRequired); }
       result.$ref = `#/$defs/${key}`;
     }
     for (const keyword of ["properties", "patternProperties", "$defs", "definitions", "dependentSchemas"]) {
@@ -95,16 +109,13 @@ export function schemaContext(document: Record<string, unknown>) {
     for (const keyword of ["allOf", "anyOf", "oneOf", "prefixItems"]) {
       if (node[keyword] !== undefined) {
         if (!Array.isArray(node[keyword])) throw new Error("Invalid schema composition");
-        result[keyword] = (node[keyword] as unknown[]).map((schema) => normalize(schema, dialect));
+        result[keyword] = (node[keyword] as unknown[]).map((schema) => normalize(schema, dialect, keyword === "prefixItems" ? new Set() : omittedRequired));
       }
     }
     for (const keyword of ["items", "additionalItems", "additionalProperties", "propertyNames", "contains", "not", "if", "then", "else", "unevaluatedProperties", "unevaluatedItems"]) {
       if (node[keyword] !== undefined) result[keyword] = Array.isArray(node[keyword]) ? (node[keyword] as unknown[]).map((schema) => normalize(schema, dialect)) : normalize(node[keyword], dialect);
     }
-    if (Array.isArray(node.required) && node.properties) {
-      const properties = object(node.properties);
-      result.required = node.required.filter((name) => !readOnly(properties[String(name)]));
-    }
+    if (Array.isArray(node.required)) result.required = node.required.filter((name) => !omittedRequired.has(String(name)));
     return result;
   };
   return { definitions, normalize };
