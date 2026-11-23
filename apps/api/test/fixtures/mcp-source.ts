@@ -9,6 +9,7 @@ export async function startMcpSource(port = 0) {
     { name: "count", description: "Return a count", inputSchema: { type: "object", properties: {} } },
   ];
   const calls: Array<{ name: string; arguments: unknown; authorization: string | undefined }> = [];
+  const cancellations: string[] = [];
   let held: Promise<void> | undefined;
   let started: (() => void) | undefined;
   let discoveryHold: { wait: Promise<void>; started: () => void } | undefined;
@@ -22,6 +23,7 @@ export async function startMcpSource(port = 0) {
     });
     server.setRequestHandler("tools/call", async (request, context) => {
       calls.push({ name: request.params.name, arguments: request.params.arguments, authorization: context.http?.req?.headers.get("authorization") ?? undefined });
+      context.mcpReq.signal.addEventListener("abort", () => cancellations.push(request.params.name), { once: true });
       started?.();
       await held;
       return { content: [{ type: "text", text: String(request.params.arguments?.text ?? "2") }] };
@@ -37,7 +39,7 @@ export async function startMcpSource(port = 0) {
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("Expected TCP listener");
   return {
-    tools, calls, port: address.port, url: `http://127.0.0.1:${address.port}/mcp`,
+    tools, calls, cancellations, port: address.port, url: `http://127.0.0.1:${address.port}/mcp`,
     holdDiscovery() {
       let release!: () => void;
       let notify!: () => void;

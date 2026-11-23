@@ -8,7 +8,8 @@ await initializeDatabase(database, { adminUsername: "browser-admin", adminPasswo
 const source = await startMcpSource();
 const rest = await startRestSource();
 const app = createApp(database);
-app.get("/__fixture__/targets", (_request, response) => response.json({ mcp: source.url, rest: rest.url }));
+app.get("/__fixture__/targets", (_request, response) => response.json({ mcp: source.url, rest: rest.url, document: "http://127.0.0.1:3310/__fixture__/openapi" }));
+app.get("/__fixture__/openapi", (_request, response) => response.type("text/yaml").send(`openapi: 3.1.0\nservers:\n  - url: ${rest.url}\npaths:\n  /url-read:\n    get:\n      operationId: url-read\n`));
 const server = app.listen(3310, "127.0.0.1");
 async function close() {
   await app.locals.closeMcp();
