@@ -8,6 +8,7 @@ import { importCurl } from "./curl-import.js";
 import { confirmImport } from "./import-confirm.js";
 import { importOpenApi } from "./openapi-import.js";
 import { importInput } from "./import-input.js";
+import { targetImport } from "./import-targets.js";
 
 type ResolveUser = (request: Request) => Promise<{ id: string; isAdmin: boolean } | null>;
 
@@ -36,6 +37,7 @@ export function registerImportRoutes(app: Express, database: Kysely<DatabaseSche
     try {
       const { text, baseUrl } = await importInput(request.body, limits, controller.signal);
       preview = { id: randomUUID(), kind, groups: kind === "curl" ? importCurl(text, limits) : importOpenApi(text, limits, baseUrl) };
+      await targetImport(database, preview, request.body.targetServices, limits);
       if (Buffer.byteLength(JSON.stringify(preview)) > limits.importBytes) throw new Error("Normalized import exceeds the configured byte budget");
     } catch (error) {
       const status = error && typeof error === "object" && "status" in error && (error.status === 413 || error.status === 502) ? error.status : 400;

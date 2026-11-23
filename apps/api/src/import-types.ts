@@ -4,6 +4,8 @@ export interface ImportOperation {
   supported: boolean;
   reasons: string[];
   definition: Record<string, unknown>;
+  change?: "added" | "modified" | "unchanged";
+  existingToolId?: string;
 }
 export interface ImportGroup {
   id: string;
@@ -12,6 +14,8 @@ export interface ImportGroup {
   namespace: string;
   headers: Record<string, string>;
   operations: ImportOperation[];
+  serviceId?: string;
+  revision?: string;
 }
 export interface ImportPreview {
   id: string;
