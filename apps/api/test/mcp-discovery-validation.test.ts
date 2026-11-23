@@ -15,5 +15,7 @@ it("does not interpret SDK-excluded invalid tools as administrator-confirmed del
   source.tools[1].inputSchema = { type: "object", properties: { value: { type: "object", "x-mcp-header": "Invalid" } } };
   const failed = await platform.admin.post(`${route}/sync-preview`).expect(502);
   expect(failed.body.error).toMatch(/x-mcp-header/i);
+  source.tools[1].inputSchema = { type: "object", properties: { value: { type: ["string"], "x-mcp-header": "Invalid" } } };
+  await platform.admin.post(`${route}/sync-preview`).expect(502);
   expect((await platform.admin.get(`${route}/tools`).expect(200)).body.tools.map((tool: { id: string }) => tool.id).sort()).toEqual(tools.map((tool: { id: string }) => tool.id).sort());
 });

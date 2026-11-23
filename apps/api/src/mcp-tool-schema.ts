@@ -6,7 +6,7 @@ export function assertHeaderDeclarations(inputSchema: unknown) {
     if (Object.hasOwn(node, "x-mcp-header")) {
       const name = node["x-mcp-header"];
       if (!reachable || depth === 0 || typeof name !== "string" || !/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(name)
-        || !["string", "integer", "boolean"].includes(String(node.type)) || names.has(name.toLowerCase())) {
+        || typeof node.type !== "string" || !["string", "integer", "boolean"].includes(node.type) || names.has(name.toLowerCase())) {
         throw new Error("Invalid x-mcp-header declaration; discovery was not applied");
       }
       names.add(name.toLowerCase());
