@@ -1,0 +1,50 @@
+[WebServer] (node:31492) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:31494) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:31500) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:31501) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:31502) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:31509) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 test/service-reimport-console.spec.ts:3:1 › administrator imports into the selected REST service while retaining tools and grants (6.1s)
+
+
+  1) test/service-reimport-console.spec.ts:3:1 › administrator imports into the selected REST service while retaining tools and grants
+
+    Error: expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  getByRole('button', { name: 'REST API', exact: true })
+    Expected: "false"
+    Received: "true"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveAttribute" getByRole('button', { name: 'REST API', exact: true }) with timeout 5000ms
+      - waiting for getByRole('button', { name: 'REST API', exact: true })
+        14 × locator resolved to <button type="button" aria-pressed="true" aria-label="REST API" class="connection-option selected">…</button>
+           - unexpected value "true"
+
+
+      53 |   await page.getByLabel("导入原文", { exact: true }).fill("unfinished import");
+      54 |   await page.getByRole("button", { name: "接入服务", exact: true }).click();
+    > 55 |   await expect(page.getByRole("button", { name: "REST API", exact: true })).toHaveAttribute("aria-pressed", "false");
+         |                                                                             ^
+      56 |   await expect(page.getByLabel("导入原文", { exact: true })).toHaveCount(0);
+      57 |   await page.getByRole("button", { name: "REST API", exact: true }).click();
+      58 |   await page.getByRole("button", { name: "OpenAPI", exact: true }).click();
+        at /Users/wangx/workspace/aaa/github/agent-capability-hub-unified-mcp/apps/web/test/service-reimport-console.spec.ts:55:77
+
+    Error Context: ../../dev-artifacts/unified-mcp-20261123/red-fresh/service-reimport-console-a-d0d6f--retaining-tools-and-grants/error-context.md
+
+  1 failed
+    test/service-reimport-console.spec.ts:3:1 › administrator imports into the selected REST service while retaining tools and grants
+undefined
+/Users/wangx/workspace/aaa/github/agent-capability-hub-unified-mcp/apps/web:
+[ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL] Command failed with exit code 1: playwright test test/service-reimport-console.spec.ts --output ../../dev-artifacts/unified-mcp-20261123/red-fresh

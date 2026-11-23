@@ -174,6 +174,7 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
       )}
       {onboarding ? (
         <ServiceOnboarding
+          key={onboarding.target?.id ?? "new"}
           target={onboarding.target}
           onCancel={() => setOnboarding(null)}
           onSaved={(saved, imported) => {

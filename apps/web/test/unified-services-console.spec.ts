@@ -46,4 +46,7 @@ test("administrator manages native MCP and manual REST tools through one service
   await expect(page.getByRole("navigation", { name: "已登记服务" }).getByRole("button", { name: /^Unified Native/ })).toContainText("原生 MCP");
   await expect(page.getByRole("navigation", { name: "已登记服务" }).getByRole("button", { name: /^Unified REST/ })).toContainText("REST API");
   await page.screenshot({ path: testInfo.outputPath("unified-services.png"), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("heading", { name: "Unified REST", exact: true }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath("unified-services-mobile.png") });
 });

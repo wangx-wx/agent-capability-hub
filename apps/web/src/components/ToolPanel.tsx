@@ -155,7 +155,7 @@ export function ToolPanel({ service, tools, onChanged }: ToolPanelProps) {
           ))}
         </div>
       ) : (
-        <p className="muted">尚无已确认工具。MCP 服务请主动同步；REST 服务可手工定义或导入。</p>
+        <p className="muted">尚无已确认工具。原生 MCP 接入请主动同步；REST API 接入可手工定义或导入。</p>
       )}
 
       {editing && (

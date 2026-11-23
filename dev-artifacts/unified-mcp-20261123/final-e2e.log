@@ -1,0 +1,24 @@
+[WebServer] (node:32071) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:32072) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:32078) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:32080) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:32081) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 7 tests using 1 worker
+
+(node:32088) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 test/import-console.spec.ts:3:1 › administrator reviews editable REST imports and confirms only supported operations (913ms)
+  ✓  2 test/import-inputs-console.spec.ts:3:1 › administrator uploads a document, imports a URL and reviews a pasted cURL (1.1s)
+  ✓  3 test/mcp-console.spec.ts:3:1 › administrator registers and confirms MCP tools through the console (811ms)
+  ✓  4 test/multi-import-console.spec.ts:3:1 › administrator can inspect and call each service created by a multi-target import (968ms)
+  ✓  5 test/service-reimport-console.spec.ts:3:1 › administrator imports into the selected REST service while retaining tools and grants (1.1s)
+  ✓  6 test/unified-services-console.spec.ts:3:1 › administrator manages native MCP and manual REST tools through one service menu (1.2s)
+  ✓  7 test/usage-console.spec.ts:3:1 › role grants, user keys, formal calls and private usage statistics form a complete browser loop (1.2s)
+
+  7 passed (9.1s)

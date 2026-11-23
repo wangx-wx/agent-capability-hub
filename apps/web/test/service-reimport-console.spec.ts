@@ -30,6 +30,7 @@ test("administrator imports into the selected REST service while retaining tools
   await expect(page.getByLabel("导入命名空间", { exact: true })).toHaveValue("reimport-unified");
   await expect(page.getByLabel("导入后启用", { exact: true })).toBeChecked();
   await page.getByLabel("选择 GET /v1/read", { exact: true }).check();
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: testInfo.outputPath("service-reimport.png"), fullPage: true });
   await page.getByRole("button", { name: "确认导入", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Reimport Unified", exact: true })).toBeVisible();
@@ -48,4 +49,16 @@ test("administrator imports into the selected REST service while retaining tools
   await expect(page.getByRole("heading", { name: "Reimport Unified", exact: true })).toBeVisible();
   expect((await (await page.request.get(route)).json()).tools.map((tool: { id: string }) => tool.id).sort()).toEqual([old.id, keep.id].sort());
   expect((await (await page.request.get(`/api/admin/services/${service.id}`)).json()).service.headers).toEqual({ Authorization: "Bearer configured-service" });
+
+  await page.getByRole("button", { name: "导入工具", exact: true }).click();
+  await page.getByLabel("导入原文", { exact: true }).fill("unfinished import");
+  await page.getByRole("button", { name: "接入服务", exact: true }).click();
+  await expect(page.getByRole("button", { name: "REST API", exact: true })).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByLabel("导入原文", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "REST API", exact: true }).click();
+  await page.getByRole("button", { name: "OpenAPI", exact: true }).click();
+  await expect(page.getByLabel("导入原文", { exact: true })).toHaveValue("");
+  await page.getByLabel("导入原文", { exact: true }).fill(JSON.stringify({ openapi: "3.1.0", servers: [{ url }], paths: { "/fresh": { get: {} } } }));
+  await page.getByRole("button", { name: "解析预览", exact: true }).click();
+  await expect(page.getByRole("combobox", { name: "保存方式", exact: true })).toHaveValue("");
 });
