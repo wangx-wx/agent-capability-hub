@@ -8,6 +8,7 @@ import { registerSyncRoutes } from "./mcp-sync.js";
 import { registerToolTestRoutes } from "./tool-test.js";
 import { registerServiceEditRoutes } from "./service-edit.js";
 import { registerRestToolRoutes } from "./rest-tools.js";
+import { registerToolEditRoutes } from "./tool-edit.js";
 
 type ResolveUser = (request: Request) => Promise<{ id: string; isAdmin: boolean } | null>;
 
@@ -58,6 +59,7 @@ export function registerServiceRoutes(app: Express, database: Kysely<DatabaseSch
   registerToolTestRoutes(router, database, sources);
   registerServiceEditRoutes(router, database, sources);
   registerRestToolRoutes(router, database, sources.limits);
+  registerToolEditRoutes(router, database, sources.limits);
   router.post("/:id/test-connection", async (request, response) => {
     const service = await serviceQuery(database).where("services.id", "=", request.params.id).executeTakeFirst();
     if (!service) { response.status(404).json({ error: "Service not found" }); return; }
