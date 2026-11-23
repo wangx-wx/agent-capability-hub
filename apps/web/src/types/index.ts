@@ -1,4 +1,4 @@
-export type ViewId = "overview" | "users" | "roles" | "keys" | "services" | "imports" | "audit";
+export type ViewId = "overview" | "users" | "roles" | "keys" | "services" | "audit";
 
 export interface SessionUser {
   id: string;
@@ -52,6 +52,11 @@ export interface Service {
   enabled: boolean;
   connectionStatus: string;
 }
+
+export const connectionKindLabels: Record<Service["kind"], string> = {
+  mcp: "原生 MCP",
+  rest: "REST API",
+};
 
 export interface RegisteredTool {
   id: string;

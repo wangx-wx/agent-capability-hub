@@ -1,18 +1,19 @@
 import { useState, type FormEvent } from "react";
 import { api, errorMessage } from "../lib/api";
-import type { Service } from "../types";
+import { connectionKindLabels, type Service } from "../types";
 
 interface ServiceEditorProps {
   initial?: Service;
+  connectionKind?: Service["kind"];
   onSaved: (service: Service) => void;
   onCancel: () => void;
 }
 
-export function ServiceEditor({ initial, onSaved, onCancel }: ServiceEditorProps) {
+export function ServiceEditor({ initial, connectionKind = "mcp", onSaved, onCancel }: ServiceEditorProps) {
   const [name, setName] = useState(initial?.name ?? "");
   const [namespace, setNamespace] = useState(initial?.namespace ?? "");
   const [namespaceEdited, setNamespaceEdited] = useState(Boolean(initial));
-  const [kind, setKind] = useState<Service["kind"]>(initial?.kind ?? "mcp");
+  const kind = initial?.kind ?? connectionKind;
   const [url, setUrl] = useState(initial?.url ?? "");
   const [transport, setTransport] = useState<Service["transport"]>(initial?.transport ?? "http");
   const [headers, setHeaders] = useState(JSON.stringify(initial?.headers ?? {}, null, 2));
@@ -71,8 +72,8 @@ export function ServiceEditor({ initial, onSaved, onCancel }: ServiceEditorProps
     >
       <div className="subsection-heading">
         <div>
-          <h2>{initial ? "编辑服务" : "登记服务"}</h2>
-          <p>配置下游 MCP 或 REST 服务地址、固定请求头及超时时间。</p>
+          <h2>{initial ? "编辑服务" : "服务配置"}</h2>
+          <p>配置{connectionKindLabels[kind]}地址、固定请求头及超时时间。</p>
         </div>
       </div>
 
@@ -109,15 +110,8 @@ export function ServiceEditor({ initial, onSaved, onCancel }: ServiceEditorProps
           />
         </label>
         <label>
-          服务类型
-          <select
-            value={kind}
-            onChange={(event) => setKind(event.target.value as Service["kind"])}
-            disabled={Boolean(initial)}
-          >
-            <option value="mcp">MCP</option>
-            <option value="rest">REST</option>
-          </select>
+          接入方式
+          <input value={connectionKindLabels[kind]} readOnly />
         </label>
         {kind === "mcp" && (
           <label>
@@ -138,7 +132,7 @@ export function ServiceEditor({ initial, onSaved, onCancel }: ServiceEditorProps
             value={url}
             onChange={(event) => setUrl(event.target.value)}
             required
-            placeholder="https://service.example/mcp"
+            placeholder={kind === "mcp" ? "https://service.example/mcp" : "https://api.example/v1"}
           />
         </label>
         <label>
@@ -171,7 +165,10 @@ export function ServiceEditor({ initial, onSaved, onCancel }: ServiceEditorProps
           spellCheck={false}
         />
       </label>
-      <p className="muted">固定请求头由服务统一注入，调用参数不能覆盖。REST 配置有效且启用后即可调用。</p>
+      <p className="muted">
+        固定请求头由服务统一注入，调用参数不能覆盖。
+        {kind === "rest" ? "配置有效且启用后即可调用，保存后可定义或导入工具。" : "保存后请同步并确认工具目录。"}
+      </p>
 
       <label>
         服务说明

@@ -6,7 +6,10 @@ test("administrator uploads a document, imports a URL and reviews a pasted cURL"
   await page.getByLabel("账号").fill("browser-admin");
   await page.getByLabel("密码", { exact: true }).fill("browser-test-password");
   await page.getByRole("button", { name: "登录", exact: true }).click();
-  await page.getByRole("button", { name: "REST 导入", exact: true }).click();
+  await page.getByRole("button", { name: "MCP 服务", exact: true }).click();
+  await page.getByRole("button", { name: "接入服务", exact: true }).click();
+  await page.getByRole("button", { name: "REST API", exact: true }).click();
+  await page.getByRole("button", { name: "OpenAPI", exact: true }).click();
   await page.getByRole("combobox", { name: "输入方式", exact: true }).selectOption("file");
   await page.getByLabel("OpenAPI 文件").setInputFiles({ name: "openapi.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ openapi: "3.1.0", servers: [{ url: targets.rest }], paths: { "/file-read": { get: { operationId: "file-read" } } } })) });
   await expect(page.getByText("openapi.json", { exact: true })).toBeVisible();
@@ -15,6 +18,10 @@ test("administrator uploads a document, imports a URL and reviews a pasted cURL"
   await page.getByLabel("选择 GET /file-read", { exact: true }).check();
   await page.getByRole("button", { name: "确认导入", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("导入完成");
+  await expect(page.getByRole("button", { name: "试调用 file-browser__file-read", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "接入服务", exact: true }).click();
+  await page.getByRole("button", { name: "REST API", exact: true }).click();
+  await page.getByRole("button", { name: "OpenAPI", exact: true }).click();
   await page.getByRole("combobox", { name: "输入方式", exact: true }).selectOption("url");
   await page.getByLabel("文档 URL", { exact: true }).fill(targets.document);
   await page.getByRole("button", { name: "解析预览", exact: true }).click();
@@ -22,7 +29,10 @@ test("administrator uploads a document, imports a URL and reviews a pasted cURL"
   await page.getByLabel("选择 GET /url-read", { exact: true }).check();
   await page.getByRole("button", { name: "确认导入", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("导入完成");
-  await page.getByRole("combobox", { name: "导入格式", exact: true }).selectOption("curl");
+  await expect(page.getByRole("button", { name: "试调用 url-browser__url-read", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "接入服务", exact: true }).click();
+  await page.getByRole("button", { name: "REST API", exact: true }).click();
+  await page.getByRole("button", { name: "cURL", exact: true }).click();
   await page.getByLabel("导入原文", { exact: true }).fill(`curl '${targets.rest}/curl-read?limit=001' -H 'Authorization: Bearer source-test'`);
   await page.getByRole("button", { name: "解析预览", exact: true }).click();
   await page.getByLabel("导入命名空间", { exact: true }).fill("curl-browser");
@@ -32,4 +42,5 @@ test("administrator uploads a document, imports a URL and reviews a pasted cURL"
   expect(JSON.parse(await definition.inputValue()).example.query.limit).toBe("001");
   await page.getByRole("button", { name: "确认导入", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("导入完成");
+  await expect(page.getByRole("button", { name: /^试调用 curl-browser__/ })).toBeVisible();
 });

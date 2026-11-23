@@ -5,7 +5,6 @@ import { SecretDialog } from "./components/SecretDialog";
 import { LoginPage } from "./pages/LoginPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import { ServicesPage } from "./pages/ServicesPage";
-import { ImportPage } from "./pages/ImportPage";
 import { AuditPage } from "./pages/AuditPage";
 import { UsersPage } from "./pages/UsersPage";
 import { RolesPage } from "./pages/RolesPage";
@@ -66,7 +65,6 @@ export default function App() {
           <OverviewPage user={user} onPasswordChanged={() => setUser(null)} />
         )}
         {view === "services" && user.isAdmin && <ServicesPage setError={setError} />}
-        {view === "imports" && user.isAdmin && <ImportPage />}
         {view === "audit" && user.isAdmin && <AuditPage />}
         {view === "users" && user.isAdmin && (
           <UsersPage

@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import {
   Boxes,
-  FileInput,
   KeyRound,
   LayoutGrid,
   LogOut,
@@ -54,7 +53,6 @@ export function AppShell({
           title: "能力接入",
           items: [
             { id: "services", label: "MCP 服务", icon: Server },
-            { id: "imports", label: "REST 导入", icon: FileInput },
             { id: "audit", label: "调用审计", icon: ScrollText },
           ],
         },

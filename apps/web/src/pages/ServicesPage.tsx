@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { Pencil, Plug, Plus, Power, RefreshCw, Trash2 } from "lucide-react";
 import { api, errorMessage } from "../lib/api";
 import { ServiceEditor } from "../components/ServiceEditor";
+import { ServiceOnboarding } from "../components/ServiceOnboarding";
 import { ToolPanel } from "../components/ToolPanel";
-import { connectionLabels, type RegisteredTool, type Service } from "../types";
+import { connectionKindLabels, connectionLabels, type RegisteredTool, type Service } from "../types";
 
 interface SyncPreview {
   id: string;
@@ -25,6 +26,8 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
   const [services, setServices] = useState<Service[]>([]);
   const [selected, setSelected] = useState<Service | null>(null);
   const [editor, setEditor] = useState<{ initial?: Service } | null>(null);
+  const [onboarding, setOnboarding] = useState(false);
+  const [message, setMessage] = useState("");
   const [tools, setTools] = useState<RegisteredTool[]>([]);
   const [preview, setPreview] = useState<SyncPreview | null>(null);
   const [busy, setBusy] = useState(false);
@@ -122,7 +125,7 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
           </p>
           <h1>MCP 服务</h1>
           <p className="section-description">
-            登记 MCP 或 REST 来源，确认工具目录后在角色与授权页面分配访问权限。
+            统一管理服务与工具，通过原生 MCP 或 REST API 接入，在角色与授权页面分配访问权限。
           </p>
         </div>
         <div className="button-row">
@@ -130,14 +133,30 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
             <RefreshCw size={14} strokeWidth={1.5} />
             <span>刷新服务</span>
           </button>
-          <button type="button" className="btn btn-primary" onClick={() => setEditor({})}>
+          <button type="button" className="btn btn-primary" onClick={() => {
+            setOnboarding(true);
+            setEditor(null);
+            setMessage("");
+            setError("");
+          }}>
             <Plus size={14} strokeWidth={1.5} />
-            <span>登记服务</span>
+            <span>接入服务</span>
           </button>
         </div>
       </div>
 
-      {editor ? (
+      {message && <p role="status" className="status-banner service-notice">{message}</p>}
+      {onboarding ? (
+        <ServiceOnboarding
+          onCancel={() => setOnboarding(false)}
+          onSaved={(saved, imported) => {
+            setOnboarding(false);
+            setSelected(saved[0]);
+            setMessage(imported ? `导入完成，共保存 ${saved.length} 个服务。请在角色与授权页面分配工具权限。` : "服务已保存，可继续配置工具。");
+            void load(saved[0].id);
+          }}
+        />
+      ) : editor ? (
         <ServiceEditor
           initial={editor.initial}
           onCancel={() => setEditor(null)}
@@ -161,7 +180,7 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
               >
                 <div className="source-item-top">
                   <strong>{service.name}</strong>
-                  <span className="badge badge-mono">{service.kind.toUpperCase()}</span>
+                  <span className="badge badge-mono">{connectionKindLabels[service.kind]}</span>
                 </div>
                 <div className="source-item-meta">
                   <span>{service.namespace}</span>
@@ -183,7 +202,7 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
                   <h2>{selected.name}</h2>
                   <p className="address-text">{selected.url}</p>
                   <div className="service-meta-row">
-                    <span className="badge badge-mono">{selected.kind.toUpperCase()}</span>
+                    <span className="badge badge-mono">{connectionKindLabels[selected.kind]}</span>
                     <span className="badge badge-mono">{selected.namespace}</span>
                     <span className={`badge ${selected.enabled ? "badge-ok" : ""}`}>
                       <span className="status-dot" />

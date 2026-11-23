@@ -1,0 +1,50 @@
+[WebServer] (node:30110) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:30111) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:30117) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:30119) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:30120) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:30127) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 test/unified-services-console.spec.ts:3:1 › administrator manages native MCP and manual REST tools through one service menu (5.4s)
+
+
+  1) test/unified-services-console.spec.ts:3:1 › administrator manages native MCP and manual REST tools through one service menu
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByRole('navigation', { name: '主导航' }).getByRole('button', { name: 'REST 导入', exact: true })
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" getByRole('navigation', { name: '主导航' }).getByRole('button', { name: 'REST 导入', exact: true }) with timeout 5000ms
+      - waiting for getByRole('navigation', { name: '主导航' }).getByRole('button', { name: 'REST 导入', exact: true })
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+       9 |   const navigation = page.getByRole("navigation", { name: "主导航" });
+      10 |   await expect(navigation.getByRole("button", { name: "MCP 服务", exact: true })).toBeVisible();
+    > 11 |   await expect(navigation.getByRole("button", { name: "REST 导入", exact: true })).toHaveCount(0);
+         |                                                                                  ^
+      12 |   await navigation.getByRole("button", { name: "MCP 服务", exact: true }).click();
+      13 |   await page.getByRole("button", { name: "接入服务", exact: true }).click();
+      14 |   await expect(page.getByRole("heading", { name: "选择接入方式", exact: true })).toBeVisible();
+        at /Users/wangx/workspace/aaa/github/agent-capability-hub-unified-mcp/apps/web/test/unified-services-console.spec.ts:11:82
+
+    Error Context: ../../dev-artifacts/unified-mcp-20261123/red-unified/unified-services-console-a-862e3-ls-through-one-service-menu/error-context.md
+
+  1 failed
+    test/unified-services-console.spec.ts:3:1 › administrator manages native MCP and manual REST tools through one service menu
+undefined
+/Users/wangx/workspace/aaa/github/agent-capability-hub-unified-mcp/apps/web:
+[ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL] Command failed with exit code 1: playwright test test/unified-services-console.spec.ts --output ../../dev-artifacts/unified-mcp-20261123/red-unified
