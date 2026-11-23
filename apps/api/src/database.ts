@@ -10,6 +10,13 @@ import {
   type MigrationProvider,
 } from "kysely";
 import { hashPassword } from "./password.js";
+import type { ServiceTable } from "./service-schema.js";
+import { serviceMigration } from "./service-migration.js";
+import type { ToolTable } from "./tool-schema.js";
+import { toolMigration } from "./tool-migration.js";
+import type { AuditTable } from "./audit-schema.js";
+import { auditMigration } from "./audit-migration.js";
+import { toolNameMigration } from "./tool-name-migration.js";
 
 interface UserTable {
   id: string;
@@ -71,6 +78,9 @@ export interface DatabaseSchema {
   role_resources: RoleResourceTable;
   api_keys: ApiKeyTable;
   sessions: SessionTable;
+  services: ServiceTable;
+  tools: ToolTable;
+  audit: AuditTable;
 }
 
 const initialMigration: Migration = {
@@ -148,7 +158,7 @@ const initialMigration: Migration = {
 };
 
 const migrationProvider: MigrationProvider = {
-  getMigrations: async () => ({ "001_initial": initialMigration }),
+  getMigrations: async () => ({ "001_initial": initialMigration, "002_services": serviceMigration, "003_tools": toolMigration, "004_audit": auditMigration, "005_tool_names": toolNameMigration }),
 };
 
 export interface InitialAdminCredentials {
@@ -166,6 +176,7 @@ export async function initializeDatabase(
   const migrator = new Migrator({ db: database, provider: migrationProvider });
   const migration = await migrator.migrateToLatest();
   if (migration.error) throw migration.error;
+  await database.updateTable("audit").set({ status: "unknown" }).where("status", "=", "running").execute();
 
   const admin = await database.selectFrom("users").select("id").where("isAdmin", "=", 1).executeTakeFirst();
   if (admin) return;

@@ -1,0 +1,170 @@
+{
+  "researchStartedOn": "2026-11-21",
+  "manifestCreatedAtUtc": "2026-11-21T16:02:07.579364+00:00",
+  "timezoneForResearch": "Asia/Shanghai",
+  "note": "Sources fetched during this research session. Snapshot hashes pin the downloaded evidence; latest endpoints and main branch are mutable. No reference services were started.",
+  "referenceRepositories": [
+    {
+      "path": "/Users/wangx/workspace/aaa/github/mcp-context-forge",
+      "head": "14a4c4a60cfa9dd8d7e04eb1711acf338676f938",
+      "workingTreeClean": true
+    },
+    {
+      "path": "/Users/wangx/workspace/lyy-workspace/gitlab/ai/infrastructure/supermux",
+      "head": "d6db5b78c656beaad998fac5dc02e1b9a9ee8aca",
+      "workingTreeClean": true
+    }
+  ],
+  "sources": [
+    {
+      "file": "mcp-docs-index.txt",
+      "url": "https://modelcontextprotocol.io/llms.txt",
+      "bytes": 51000,
+      "sha256": "fa2da35e906b4f766ce714a68d3beb2e0cba15da4a6397430b05cd926696911d"
+    },
+    {
+      "file": "mcp-2026-index.md",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/index.md",
+      "bytes": 6175,
+      "sha256": "fa6c3afbf991d2b05d3dbc88e2e9c640dc9e7b588a8a8f15c2b7ffa3973625bf"
+    },
+    {
+      "file": "mcp-2026-changelog.md",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/changelog.md",
+      "bytes": 12427,
+      "sha256": "3467bcf82d52282332abf50efe0b5875d36f84a9a47205413e97018b4b4c8ea1"
+    },
+    {
+      "file": "mcp-2026-versioning.md",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning.md",
+      "bytes": 9000,
+      "sha256": "f42c89c87d9ac718cffa8bfc3be2e0002f92027274cec50399ea17a613edc46a"
+    },
+    {
+      "file": "mcp-2026-streamable-http.md",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http.md",
+      "bytes": 31362,
+      "sha256": "30ca2d07f890ed66bede3cf6703af5169fe3fa86fb8e06c602c001bd743ce798"
+    },
+    {
+      "file": "mcp-2026-authorization.md",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/index.md",
+      "bytes": 26106,
+      "sha256": "d9ff08c88f8867670ee32a0c74859c3f5b7d4276953f66f48c68858253bab0e6"
+    },
+    {
+      "file": "mcp-2026-sdk.md",
+      "url": "https://modelcontextprotocol.io/docs/2026-07-28/sdk.md",
+      "bytes": 3190,
+      "sha256": "3a05272e1d911d310a477e6c8b2e9336156b3bbd92f83bf76fabb14b76ec3bce"
+    },
+    {
+      "file": "mcp-2026-basic.md",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/index.md",
+      "bytes": 25380,
+      "sha256": "6decb4289e571657d07f0adc44871c7ac6fb90637059ee567b433bdebfcfadfb"
+    },
+    {
+      "file": "mcp-2026-tools.md",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools.md",
+      "bytes": 24981,
+      "sha256": "30b2db501261cfeeaa621d26d55890f53fa38a3012f740a1a3fcdb02e0316cba"
+    },
+    {
+      "file": "mcp-2026-discover.md",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/discover.md",
+      "bytes": 4075,
+      "sha256": "c430c225cb91523db996597b3162bcf361341923067b25c37f98a98a2d2168f7"
+    },
+    {
+      "file": "mcp-2026-subscriptions.md",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/subscriptions.md",
+      "bytes": 6244,
+      "sha256": "1d16feeeb1a891793714d6ce27dd5b9f2d399abf24cdc23ec02dc543303c465d"
+    },
+    {
+      "file": "mcp-2026-mrtr.md",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/mrtr.md",
+      "bytes": 13987,
+      "sha256": "32ea29f78b71f892c84a850be5db04032d5ee3578acbe9b6e2da5f1f3aef6af0"
+    },
+    {
+      "file": "mcp-2025-lifecycle.md",
+      "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle.md",
+      "bytes": 9902,
+      "sha256": "31805445171cb077884cc7103a1753a0f6f9f85c1f4fff73d435951f5ef06b51"
+    },
+    {
+      "file": "mcp-2025-transports.md",
+      "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/transports.md",
+      "bytes": 16434,
+      "sha256": "9c6e98faa1e644db7704e5c8cf7043f65d0a891effcf58da9474126acfb747df"
+    },
+    {
+      "file": "mcp-security-best-practices.md",
+      "url": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices.md",
+      "bytes": 43631,
+      "sha256": "3f654ff190ddf7d882e6a496a2de35b8fe31df2ba5d2edb4461df91afe013964"
+    },
+    {
+      "file": "typescript-sdk-readme.md",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/README.md",
+      "bytes": 8317,
+      "sha256": "d776beb7f1d0194da22e7d82cc84d869bd4ae805ba5d8283b69f57dec5b64dd6"
+    },
+    {
+      "file": "typescript-sdk-latest.json",
+      "url": "https://registry.npmjs.org/@modelcontextprotocol%2fsdk/latest",
+      "bytes": 6524,
+      "sha256": "49e6b1f452d55977dbaf77f9a3e7282f4740449a27e64e7d3fca76fe67757d36"
+    },
+    {
+      "file": "typescript-server-latest.json",
+      "url": "https://registry.npmjs.org/@modelcontextprotocol%2fserver/latest",
+      "bytes": 5622,
+      "sha256": "916410c72115be4e39bc2aa00ad4b0e4fce91b15addce2031bb94bb01e625ab1"
+    },
+    {
+      "file": "typescript-client-latest.json",
+      "url": "https://registry.npmjs.org/@modelcontextprotocol%2fclient/latest",
+      "bytes": 5481,
+      "sha256": "29a5c76d3c9faa91069233ebe1baa2ef3aebf7d5bafeb61f96429cafc84261ad"
+    },
+    {
+      "file": "typescript-sdk-tree.json",
+      "url": "https://api.github.com/repos/modelcontextprotocol/typescript-sdk/git/trees/main?recursive=1",
+      "bytes": 535354,
+      "sha256": "5604301637ed7e9a489f1a2ef851a0f331c56dade4175523c2ef6d1f2ac13c82"
+    },
+    {
+      "file": "typescript-v2-migration.md",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/docs/migration/upgrade-to-v2.md",
+      "bytes": 2394,
+      "sha256": "40f25e73210e783b1fb46f5b00aec63a3a759d5393be0c24106f537c5f6f6a4f"
+    },
+    {
+      "file": "typescript-v2-legacy-clients.md",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/docs/serving/legacy-clients.md",
+      "bytes": 7266,
+      "sha256": "8040a5e5580f4924552905e7519be2f475178ea4d70962f201e1e3dafb466ce2"
+    },
+    {
+      "file": "typescript-server-legacy-readme.md",
+      "url": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/packages/server-legacy/README.md",
+      "bytes": 1542,
+      "sha256": "43de1d91b06045ff959d766984c6f9fd95ddae9a919b1fe0fa0a1d7cdf1c4b33"
+    }
+  ],
+  "unsavedRequests": [
+    {
+      "url": "https://ts.sdk.modelcontextprotocol.io/llms.txt",
+      "reason": "optional documentation index returned HTTP 404; no snapshot created"
+    }
+  ],
+  "excludedSupplementaryDirectories": [
+    {
+      "path": "root-verification/",
+      "reason": "Additional files discovered in the shared workspace; creation and source provenance not established. Preserved unchanged, not cited or included in this research commit."
+    }
+  ]
+}

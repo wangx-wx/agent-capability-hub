@@ -6,6 +6,8 @@
 
 管理员认证、用户/角色、API Key、Skills 可见性和首个实现阶段以 [管理员认证与首个业务阶段规格](../20261121-admin-auth-and-first-business-loop.md) 为准；本文相关旧决定已按该规格更新。
 
+2026-11-22 补充：本轮真实 MCP 与 REST 接入的逐项澄清记录见 [MCP 网关与 REST 转 MCP 接入规格](../20261122-mcp-rest-integration.md)。各项选择已完成，整体规格待用户确认；本文保留方向与历史阶段说明，实施时再按确认后的接入规格落实。
+
 ## Problem Statement
 
 团队开始使用 MCP 工具、REST API 和 Agent Skills 后，能力来源分散在不同的 MCP 服务、API 文档和 GitHub 仓库中。管理员难以统一登记可用能力、控制成员能调用哪些工具，也难以追溯 MCP 工具的使用者。用户则需要自行寻找 Skills、辨认适用于哪些 Agent，并手工配置 MCP 连接。

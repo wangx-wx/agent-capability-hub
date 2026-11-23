@@ -1,0 +1,35 @@
+import { test, expect } from "@playwright/test";
+
+test("administrator uploads a document, imports a URL and reviews a pasted cURL", async ({ page }) => {
+  const targets = await (await page.request.get("http://127.0.0.1:3310/__fixture__/targets")).json();
+  await page.goto("/");
+  await page.getByLabel("账号").fill("browser-admin");
+  await page.getByLabel("密码", { exact: true }).fill("browser-test-password");
+  await page.getByRole("button", { name: "登录", exact: true }).click();
+  await page.getByRole("button", { name: "REST 导入", exact: true }).click();
+  await page.getByRole("combobox", { name: "输入方式", exact: true }).selectOption("file");
+  await page.getByLabel("OpenAPI 文件").setInputFiles({ name: "openapi.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ openapi: "3.1.0", servers: [{ url: targets.rest }], paths: { "/file-read": { get: { operationId: "file-read" } } } })) });
+  await expect(page.getByText("openapi.json", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "解析预览", exact: true }).click();
+  await page.getByLabel("导入命名空间", { exact: true }).fill("file-browser");
+  await page.getByLabel("选择 GET /file-read", { exact: true }).check();
+  await page.getByRole("button", { name: "确认导入", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("导入完成");
+  await page.getByRole("combobox", { name: "输入方式", exact: true }).selectOption("url");
+  await page.getByLabel("文档 URL", { exact: true }).fill(targets.document);
+  await page.getByRole("button", { name: "解析预览", exact: true }).click();
+  await page.getByLabel("导入命名空间", { exact: true }).fill("url-browser");
+  await page.getByLabel("选择 GET /url-read", { exact: true }).check();
+  await page.getByRole("button", { name: "确认导入", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("导入完成");
+  await page.getByRole("combobox", { name: "导入格式", exact: true }).selectOption("curl");
+  await page.getByLabel("导入原文", { exact: true }).fill(`curl '${targets.rest}/curl-read?limit=001' -H 'Authorization: Bearer source-test'`);
+  await page.getByRole("button", { name: "解析预览", exact: true }).click();
+  await page.getByLabel("导入命名空间", { exact: true }).fill("curl-browser");
+  await expect(page.getByRole("textbox", { name: /^导入凭证／固定请求头/ })).toHaveValue(/source-test/);
+  await page.getByLabel("选择 GET /v1/curl-read", { exact: true }).check();
+  const definition = page.getByLabel("操作定义 GET /v1/curl-read", { exact: true });
+  expect(JSON.parse(await definition.inputValue()).example.query.limit).toBe("001");
+  await page.getByRole("button", { name: "确认导入", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("导入完成");
+});

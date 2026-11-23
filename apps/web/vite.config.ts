@@ -6,7 +6,8 @@ export default defineConfig({
   server: {
     strictPort: true,
     proxy: {
-      "/api": "http://127.0.0.1:3100",
+      "/api": process.env.ACH_API_TARGET ?? "http://127.0.0.1:3100",
+      "/mcp": process.env.ACH_API_TARGET ?? "http://127.0.0.1:3100",
     },
   },
 });

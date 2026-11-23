@@ -6,6 +6,7 @@
     "dev": "pnpm --parallel --filter @ach/api --filter @ach/web dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm --filter @ach/api test"
+    "test": "pnpm --filter @ach/api test",
+    "test:e2e": "pnpm --filter @ach/web test:e2e"
   }
 }
