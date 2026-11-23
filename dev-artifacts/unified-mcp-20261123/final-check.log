@@ -1,0 +1,4 @@
+PASS: backend source, schemas, migrations and API tests unchanged from ea5db68.
+PASS: production files stay within 500 lines; largest is apps/web/src/styles/base.css (487 lines).
+PASS: browser test servers on ports 3310 and 5310 have stopped.
+PASS: original main worktree is clean.

@@ -7,7 +7,8 @@ test("administrator registers and confirms MCP tools through the console", async
   await page.getByLabel("密码", { exact: true }).fill("browser-test-password");
   await page.getByRole("button", { name: "登录", exact: true }).click();
   await page.getByRole("button", { name: "MCP 服务", exact: true }).click();
-  await page.getByRole("button", { name: "登记服务", exact: true }).click();
+  await page.getByRole("button", { name: "接入服务", exact: true }).click();
+  await page.getByRole("button", { name: "原生 MCP", exact: true }).click();
   await page.getByLabel("服务名称", { exact: true }).fill("Browser Docs");
   await page.getByLabel("服务地址", { exact: true }).fill(targets.mcp);
   await page.getByLabel("命名空间", { exact: true }).fill("browser");

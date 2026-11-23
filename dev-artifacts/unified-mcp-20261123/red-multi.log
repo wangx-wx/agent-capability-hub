@@ -1,0 +1,43 @@
+[WebServer] (node:31102) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:31103) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:31109) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:31115) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:31116) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:31123) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 test/multi-import-console.spec.ts:3:1 › administrator can inspect and call each service created by a multi-target import (30.0s)
+
+
+  1) test/multi-import-console.spec.ts:3:1 › administrator can inspect and call each service created by a multi-target import
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '查看 Multi Second', exact: true })
+
+
+      29 |   await expect(page.getByRole("status")).toContainText("共保存 2 个服务");
+      30 |   await expect(page.getByRole("heading", { name: "Multi First", exact: true })).toBeVisible();
+    > 31 |   await page.getByRole("button", { name: "查看 Multi Second", exact: true }).click();
+         |                                                                            ^
+      32 |   await expect(page.getByRole("heading", { name: "Multi Second", exact: true })).toBeVisible();
+      33 |   await page.getByRole("button", { name: "试调用 multi-second__read-two", exact: true }).click();
+      34 |   await page.getByRole("button", { name: "执行试调用", exact: true }).click();
+        at /Users/wangx/workspace/aaa/github/agent-capability-hub-unified-mcp/apps/web/test/multi-import-console.spec.ts:31:76
+
+    Error Context: ../../dev-artifacts/unified-mcp-20261123/red-multi/multi-import-console-admin-9a781-ed-by-a-multi-target-import/error-context.md
+
+  1 failed
+    test/multi-import-console.spec.ts:3:1 › administrator can inspect and call each service created by a multi-target import
+undefined
+/Users/wangx/workspace/aaa/github/agent-capability-hub-unified-mcp/apps/web:
+[ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL] Command failed with exit code 1: playwright test test/multi-import-console.spec.ts --output ../../dev-artifacts/unified-mcp-20261123/red-multi

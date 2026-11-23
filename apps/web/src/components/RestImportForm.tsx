@@ -33,19 +33,28 @@ const changeLabels: Record<string, string> = {
   unchanged: "保持",
 };
 
-export function ImportPage() {
-  const [kind, setKind] = useState("openapi");
+export function RestImportForm({ format: kind, targetService, onSaved }: {
+  format: "openapi" | "curl";
+  targetService?: Service;
+  onSaved: (services: Service[]) => void;
+}) {
   const [mode, setMode] = useState("text");
   const [text, setText] = useState("");
   const [url, setUrl] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [file, setFile] = useState<{ name: string; content: string } | null>(null);
-  const [services, setServices] = useState<Service[]>([]);
-  const [targets, setTargets] = useState<Record<string, string>>({});
+  const [services, setServices] = useState<Service[]>(targetService ? [targetService] : []);
+  const [targets, setTargets] = useState<Record<string, string>>(() => {
+    if (!targetService) return {};
+    const targetUrl = new URL(targetService.url);
+    return {
+      [targetService.url]: targetService.id,
+      ...(targetUrl.pathname === "/" ? { [targetUrl.origin]: targetService.id } : {}),
+    };
+  });
   const [previewId, setPreviewId] = useState("");
   const [groups, setGroups] = useState<DraftGroup[]>([]);
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -57,13 +66,11 @@ export function ImportPage() {
   const clear = () => {
     setPreviewId("");
     setGroups([]);
-    setMessage("");
   };
 
   const preview = async (targetServices = targets) => {
     setBusy(true);
     setError("");
-    setMessage("");
     try {
       const source = mode === "file" ? { file } : mode === "url" ? { url } : { text };
       const result = await api<{ preview: { id: string; groups: Group[] } }>(
@@ -126,9 +133,7 @@ export function ImportPage() {
           }),
         },
       );
-      clear();
-      setMessage(`导入完成，共保存 ${result.groups.length} 个服务。请在角色与授权页面分配工具权限。`);
-      setServices((await api<{ services: Service[] }>("/api/admin/services")).services);
+      onSaved(result.groups.map((group) => group.service));
     } catch (reason) {
       setError(errorMessage(reason));
     } finally {
@@ -146,13 +151,9 @@ export function ImportPage() {
 
   return (
     <section>
-      <div className="section-heading">
+      <div className="subsection-heading">
         <div>
-          <p className="eyebrow">
-            <span className="eyebrow-index">03</span>
-            <span>REST 转 MCP</span>
-          </p>
-          <h1>REST 导入</h1>
+          <h2>{kind === "openapi" ? "OpenAPI 导入" : "cURL 导入"}</h2>
           <p className="section-description">
             先解析并审阅操作定义，再确认保存。无法转换的操作会显示原因，不能选中。
           </p>
@@ -166,21 +167,6 @@ export function ImportPage() {
         </div>
 
         <div className="form-grid">
-          <label>
-            导入格式
-            <select
-              value={kind}
-              onChange={(event) => {
-                setKind(event.target.value);
-                setMode("text");
-                setTargets({});
-                clear();
-              }}
-            >
-              <option value="openapi">OpenAPI 3.0 / 3.1</option>
-              <option value="curl">cURL</option>
-            </select>
-          </label>
           {kind === "openapi" && (
             <label>
               输入方式
@@ -295,7 +281,7 @@ export function ImportPage() {
                 void preview(choices);
               }}
             >
-              <option value="">新建 REST 服务</option>
+              <option value="">新建服务（REST API 接入）</option>
               {services
                 .filter((service) => sameTarget(service, group))
                 .map((service) => (
@@ -418,11 +404,6 @@ export function ImportPage() {
       {error && (
         <p role="alert" className="form-error">
           {error}
-        </p>
-      )}
-      {message && (
-        <p role="status" className="status-banner">
-          {message}
         </p>
       )}
     </section>

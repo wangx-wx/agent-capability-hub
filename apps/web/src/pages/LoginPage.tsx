@@ -46,9 +46,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             <span className="eyebrow-index">00</span>
             <span>AGENT CAPABILITY HUB</span>
           </p>
-          <h1>统一管理 MCP 服务、REST 工具与访问凭证</h1>
+          <h1>统一管理 MCP 服务与访问凭证</h1>
           <p>
-            集中登记下游 MCP 与 REST 接口，按角色精确控制工具可见性与调用权限，所有正式调用均写入本地审计记录。
+            通过原生 MCP 或 REST API 接入服务，按角色精确控制工具可见性与调用权限，所有正式调用均写入本地审计记录。
           </p>
 
           <div className="login-index-list">
@@ -56,7 +56,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               <span>01</span>
               <div>
                 <strong>协议接入与差异确认</strong>
-                <small>支持 Streamable HTTP、旧版 SSE 以及 OpenAPI / cURL 转 REST 工具</small>
+                <small>支持 Streamable HTTP、旧版 SSE，以及 OpenAPI / cURL 导入</small>
               </div>
             </div>
             <div className="login-index-row">

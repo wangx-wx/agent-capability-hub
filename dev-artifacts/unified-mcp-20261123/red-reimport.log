@@ -1,0 +1,43 @@
+[WebServer] (node:30798) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:30799) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:30805) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:30813) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:30814) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:30821) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 test/service-reimport-console.spec.ts:3:1 › administrator imports into the selected REST service while retaining tools and grants (30.0s)
+
+
+  1) test/service-reimport-console.spec.ts:3:1 › administrator imports into the selected REST service while retaining tools and grants
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '导入工具', exact: true })
+
+
+      20 |   await page.getByRole("button", { name: "MCP 服务", exact: true }).click();
+      21 |   await page.getByRole("button", { name: /^Reimport Unified/ }).click();
+    > 22 |   await page.getByRole("button", { name: "导入工具", exact: true }).click();
+         |                                                                 ^
+      23 |   await expect(page.getByRole("heading", { name: "导入工具：Reimport Unified", exact: true })).toBeVisible();
+      24 |   await page.getByLabel("导入原文", { exact: true }).fill(JSON.stringify({ openapi: "3.1.0", servers: [{ url }], paths: {
+      25 |     "/v1/read": { get: { operationId: "read-renamed" } },
+        at /Users/wangx/workspace/aaa/github/agent-capability-hub-unified-mcp/apps/web/test/service-reimport-console.spec.ts:22:65
+
+    Error Context: ../../dev-artifacts/unified-mcp-20261123/red-reimport/service-reimport-console-a-d0d6f--retaining-tools-and-grants/error-context.md
+
+  1 failed
+    test/service-reimport-console.spec.ts:3:1 › administrator imports into the selected REST service while retaining tools and grants
+undefined
+/Users/wangx/workspace/aaa/github/agent-capability-hub-unified-mcp/apps/web:
+[ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL] Command failed with exit code 1: playwright test test/service-reimport-console.spec.ts --output ../../dev-artifacts/unified-mcp-20261123/red-reimport

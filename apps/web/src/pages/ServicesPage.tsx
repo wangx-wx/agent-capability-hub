@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plug, Plus, Power, RefreshCw, Trash2 } from "lucide-react";
+import { FileInput, Pencil, Plug, Plus, Power, RefreshCw, Trash2 } from "lucide-react";
 import { api, errorMessage } from "../lib/api";
 import { ServiceEditor } from "../components/ServiceEditor";
+import { ServiceOnboarding } from "../components/ServiceOnboarding";
 import { ToolPanel } from "../components/ToolPanel";
-import { connectionLabels, type RegisteredTool, type Service } from "../types";
+import { connectionKindLabels, connectionLabels, type RegisteredTool, type Service } from "../types";
 
 interface SyncPreview {
   id: string;
@@ -25,6 +26,9 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
   const [services, setServices] = useState<Service[]>([]);
   const [selected, setSelected] = useState<Service | null>(null);
   const [editor, setEditor] = useState<{ initial?: Service } | null>(null);
+  const [onboarding, setOnboarding] = useState<{ target?: Service } | null>(null);
+  const [message, setMessage] = useState("");
+  const [importedServices, setImportedServices] = useState<Service[]>([]);
   const [tools, setTools] = useState<RegisteredTool[]>([]);
   const [preview, setPreview] = useState<SyncPreview | null>(null);
   const [busy, setBusy] = useState(false);
@@ -106,6 +110,8 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
     try {
       await api(`/api/admin/services/${selected.id}`, { method: "DELETE" });
       setSelected(null);
+      setMessage("");
+      setImportedServices([]);
       await load();
     } catch (reason) {
       setError(errorMessage(reason));
@@ -122,7 +128,7 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
           </p>
           <h1>MCP 服务</h1>
           <p className="section-description">
-            登记 MCP 或 REST 来源，确认工具目录后在角色与授权页面分配访问权限。
+            统一管理服务与工具，通过原生 MCP 或 REST API 接入，在角色与授权页面分配访问权限。
           </p>
         </div>
         <div className="button-row">
@@ -130,14 +136,56 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
             <RefreshCw size={14} strokeWidth={1.5} />
             <span>刷新服务</span>
           </button>
-          <button type="button" className="btn btn-primary" onClick={() => setEditor({})}>
+          <button type="button" className="btn btn-primary" onClick={() => {
+            setOnboarding({});
+            setEditor(null);
+            setMessage("");
+            setImportedServices([]);
+            setError("");
+          }}>
             <Plus size={14} strokeWidth={1.5} />
-            <span>登记服务</span>
+            <span>接入服务</span>
           </button>
         </div>
       </div>
 
-      {editor ? (
+      {message && (
+        <div role="status" className="status-banner service-notice">
+          <p>{message}</p>
+          {importedServices.length > 1 && (
+            <div className="button-row import-result-links" role="group" aria-label="本次导入的服务">
+              {importedServices.map((service) => (
+                <button
+                  key={service.id}
+                  type="button"
+                  className="btn btn-secondary"
+                  aria-pressed={selected?.id === service.id}
+                  onClick={() => {
+                    setSelected(service);
+                    void load(service.id);
+                  }}
+                >
+                  查看 {service.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {onboarding ? (
+        <ServiceOnboarding
+          key={onboarding.target?.id ?? "new"}
+          target={onboarding.target}
+          onCancel={() => setOnboarding(null)}
+          onSaved={(saved, imported) => {
+            setOnboarding(null);
+            setSelected(saved[0]);
+            setImportedServices(imported ? saved : []);
+            setMessage(imported ? `导入完成，共保存 ${saved.length} 个服务。请在角色与授权页面分配工具权限。` : "服务已保存，可继续配置工具。");
+            void load(saved[0].id);
+          }}
+        />
+      ) : editor ? (
         <ServiceEditor
           initial={editor.initial}
           onCancel={() => setEditor(null)}
@@ -161,7 +209,7 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
               >
                 <div className="source-item-top">
                   <strong>{service.name}</strong>
-                  <span className="badge badge-mono">{service.kind.toUpperCase()}</span>
+                  <span className="badge badge-mono">{connectionKindLabels[service.kind]}</span>
                 </div>
                 <div className="source-item-meta">
                   <span>{service.namespace}</span>
@@ -183,7 +231,7 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
                   <h2>{selected.name}</h2>
                   <p className="address-text">{selected.url}</p>
                   <div className="service-meta-row">
-                    <span className="badge badge-mono">{selected.kind.toUpperCase()}</span>
+                    <span className="badge badge-mono">{connectionKindLabels[selected.kind]}</span>
                     <span className="badge badge-mono">{selected.namespace}</span>
                     <span className={`badge ${selected.enabled ? "badge-ok" : ""}`}>
                       <span className="status-dot" />
@@ -235,6 +283,21 @@ export function ServicesPage({ setError }: { setError: (value: string) => void }
                         <span>同步工具</span>
                       </button>
                     </>
+                  )}
+                  {selected.kind === "rest" && (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setOnboarding({ target: selected });
+                        setMessage("");
+                        setImportedServices([]);
+                        setError("");
+                      }}
+                    >
+                      <FileInput size={13} strokeWidth={1.5} />
+                      <span>导入工具</span>
+                    </button>
                   )}
                   <button
                     type="button"
