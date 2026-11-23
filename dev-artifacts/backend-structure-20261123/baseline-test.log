@@ -1,0 +1,66 @@
+$ pnpm --filter @ach/api test
+$ vitest run
+
+ RUN  v3.2.7 /Users/wangx/workspace/aaa/github/agent-capability-hub-backend-structure/apps/api
+
+ ✓ test/openapi.test.ts (1 test) 279ms
+ ✓ test/capabilities.test.ts (1 test) 447ms
+   ✓ authorized demo capability listing > returns the union of role grants and applies grant changes to existing keys immediately  446ms
+ ✓ test/rest-reimport.test.ts (1 test) 405ms
+   ✓ matches reimports by HTTP method and path while preserving grants and unselected tools  404ms
+ ✓ test/rest-responses.test.ts (1 test) 413ms
+   ✓ preserves text, empty and error bodies without applying examples or schema defaults  412ms
+ ✓ test/mcp-lifecycle.test.ts (1 test) 503ms
+   ✓ renames public tools immediately while preserving IDs, grants and historical names  503ms
+ ✓ test/mcp-call.test.ts (1 test) 513ms
+   ✓ executes an authorized tool with service credentials and records only formal attempts  513ms
+ ✓ test/mcp-access-changes.test.ts (1 test) 541ms
+   ✓ applies changed role grants and revoked keys to new formal calls while retaining user history  540ms
+ ✓ test/audit-failure.test.ts (3 tests) 850ms
+   ✓ does not send a tool call when SQLite cannot establish its audit record  415ms
+ ✓ test/curl-import.test.ts (1 test) 219ms
+ ✓ test/tool-management.test.ts (1 test) 227ms
+ ✓ test/rest.test.ts (1 test) 245ms
+ ✓ test/mcp-tool-history.test.ts (1 test) 292ms
+ ✓ test/limits.test.ts (1 test) 222ms
+ ✓ test/auth.test.ts (6 tests) 1539ms
+   ✓ account login > revokes every web session when a user changes their password  411ms
+   ✓ account login > lets an administrator reset a user's password and revokes the user's sessions  336ms
+ ✓ test/openapi-legacy.test.ts (1 test) 235ms
+ ✓ test/openapi-anchor.test.ts (1 test) 133ms
+ ✓ test/mcp.test.ts (1 test) 126ms
+ ✓ test/openapi-parameters.test.ts (1 test) 134ms
+ ✓ test/mcp-inflight.test.ts (1 test) 176ms
+ ✓ test/openapi-readonly.test.ts (1 test) 133ms
+ ✓ test/mcp-sync.test.ts (1 test) 133ms
+ ✓ test/mcp-reconnect.test.ts (1 test) 1299ms
+   ✓ reconnects after a network failure without replaying the call or changing the confirmed catalog  1298ms
+ ✓ test/service-connection.test.ts (1 test) 157ms
+ ✓ test/mcp-legacy.test.ts (2 tests) 194ms
+ ✓ test/mcp-discovery-validation.test.ts (1 test) 167ms
+ ✓ test/openapi-dialect.test.ts (1 test) 110ms
+ ✓ test/openapi-inputs.test.ts (1 test) 127ms
+ ✓ test/openapi-media.test.ts (1 test) 110ms
+ ✓ test/mcp-sync-order.test.ts (1 test) 153ms
+ ✓ test/rest-path.test.ts (1 test) 105ms
+ ✓ test/deployment.test.ts (1 test) 558ms
+   ✓ binds the production API to the deployment-configured host  557ms
+ ✓ test/rest-identity.test.ts (1 test) 119ms
+ ✓ test/tool-names.test.ts (1 test) 108ms
+ ✓ test/curl-rejection.test.ts (1 test) 102ms
+ ✓ test/services.test.ts (1 test) 108ms
+ ✓ test/service-kind.test.ts (1 test) 93ms
+ ✓ test/health.test.ts (1 test) 15ms
+ ✓ test/mcp-origin.test.ts (1 test) 76ms
+ ✓ test/mcp-sse.test.ts (1 test) 3298ms
+   ✓ injects static credentials into SSE GET and POST while preserving native media results  3297ms
+ ✓ test/mcp-cancellation.test.ts (1 test) 4189ms
+   ✓ attempts to propagate caller cancellation downstream without replaying the tool  4188ms
+ ✓ test/mcp-timeout.test.ts (1 test) 4169ms
+   ✓ times out an issued tool call without automatically sending it again  4168ms
+
+ Test Files  41 passed (41)
+      Tests  49 passed (49)
+   Start at  11:52:16
+   Duration  7.14s (transform 2.42s, setup 0ms, collect 15.11s, tests 23.02s, environment 3ms, prepare 1.78s)
+
