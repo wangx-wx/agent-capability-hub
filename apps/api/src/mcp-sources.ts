@@ -3,6 +3,7 @@ import type { ServiceTable } from "./service-schema.js";
 import { resolveServiceCredentials, type CallerContext } from "./credentials.js";
 import { gatewayLimits, type GatewayLimits } from "./limits.js";
 import { boundedFetch } from "./bounded-fetch.js";
+import type { Tool } from "@modelcontextprotocol/client";
 
 function connectionConfig(service: ServiceTable) {
   return JSON.stringify([service.url, service.transport, service.headers, service.timeoutSeconds]);
@@ -66,8 +67,21 @@ export class McpSources {
   }
 
   async discover(service: ServiceTable) {
-    return this.withClient(service, async (client) =>
-      (await client.listTools(undefined, { timeout: service.timeoutSeconds * 1000, cacheMode: "refresh" })).tools);
+    return this.withClient(service, async (client) => {
+      const tools: Tool[] = [];
+      const cursors = new Set<string>();
+      let cursor: string | undefined;
+      do {
+        const page = await client.request({ method: "tools/list", params: cursor === undefined ? {} : { cursor } }, { timeout: service.timeoutSeconds * 1000 });
+        tools.push(...page.tools);
+        cursor = page.nextCursor;
+        if (cursor !== undefined) {
+          if (cursors.has(cursor)) throw new Error("Discovery returned a repeated cursor; directory is incomplete");
+          cursors.add(cursor);
+        }
+      } while (cursor !== undefined);
+      return tools;
+    });
   }
 
   async withClient<T>(service: ServiceTable, action: (client: Client) => Promise<T>, caller?: CallerContext) {

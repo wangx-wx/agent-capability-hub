@@ -7,6 +7,7 @@ import type { McpSources } from "./mcp-sources.js";
 import { serviceQuery } from "./services.js";
 import { presentTool, toolQuery } from "./tool-catalog.js";
 import { assertSchemaBudget } from "./limits.js";
+import { assertHeaderDeclarations } from "./mcp-tool-schema.js";
 
 export function registerSyncRoutes(router: Router, database: Kysely<DatabaseSchema>, sources: McpSources) {
   const previews = new Map<string, { serviceId: string; fingerprint: string; tools: Tool[] }>();
@@ -28,6 +29,7 @@ export function registerSyncRoutes(router: Router, database: Kysely<DatabaseSche
       const names = new Set<string>();
       for (const tool of tools) {
         assertSchemaBudget(tool.inputSchema, sources.limits);
+        assertHeaderDeclarations(tool.inputSchema);
         if (tool.outputSchema) assertSchemaBudget(tool.outputSchema, sources.limits);
         if (!/^[A-Za-z0-9_.-]+$/.test(tool.name) || `${service.namespace}__${tool.name}`.length > 128 || names.has(tool.name)) {
           throw new Error("Discovered duplicate or invalid tool name");
