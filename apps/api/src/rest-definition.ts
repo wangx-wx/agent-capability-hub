@@ -1,6 +1,7 @@
 import type { JsonSchemaType, Tool } from "@modelcontextprotocol/server";
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/server/validators/ajv";
 import { assertSchemaBudget, gatewayLimits, type GatewayLimits } from "./limits.js";
+import { assertParameterSerialization } from "./rest-parameters.js";
 
 export interface RestParameter {
   in: "path" | "query" | "header";
@@ -31,11 +32,12 @@ export function defineRestTool(body: Record<string, unknown>, limits: GatewayLim
   if (!Array.isArray(parameters)) throw new Error("Parameters must be an array");
   const groups: Record<string, { type: "object"; properties: Record<string, unknown>; required: string[]; additionalProperties: false }> = {};
   const required: string[] = [];
+  const schemaDefs = body.schemaDefs as Record<string, unknown> | undefined;
+  if (schemaDefs !== undefined && (!schemaDefs || typeof schemaDefs !== "object" || Array.isArray(schemaDefs))) throw new Error("Invalid local schema definitions");
   for (const parameter of parameters as RestParameter[]) {
     if (!["path", "query", "header"].includes(parameter.in)) throw new Error("Only path, query and header parameters are supported");
     if (!parameter.name || typeof parameter.name !== "string" || !parameter.schema || typeof parameter.schema !== "object") throw new Error("Parameter name and schema are required");
-    const types = Array.isArray(parameter.schema.type) ? parameter.schema.type : [parameter.schema.type];
-    if (types.includes("object") || (types.includes("array") && parameter.in !== "query")) throw new Error("Object parameters and path/header arrays are unsupported");
+    assertParameterSerialization(parameter.schema as Record<string, unknown>, parameter.in, schemaDefs);
     const style = parameter.style ?? (parameter.in === "query" ? "form" : "simple");
     if (style !== (parameter.in === "query" ? "form" : "simple")) throw new Error("Unsupported parameter style");
     if (parameter.explode !== undefined && typeof parameter.explode !== "boolean") throw new Error("Explode must be a boolean");
@@ -60,8 +62,6 @@ export function defineRestTool(body: Record<string, unknown>, limits: GatewayLim
     properties.body = body.bodySchema;
     if (body.bodyRequired === true) required.push("body");
   } else if (body.bodyRequired) throw new Error("Required body needs a schema");
-  const schemaDefs = body.schemaDefs as Record<string, unknown> | undefined;
-  if (schemaDefs !== undefined && (!schemaDefs || typeof schemaDefs !== "object" || Array.isArray(schemaDefs))) throw new Error("Invalid local schema definitions");
   const inputSchema = { type: "object", properties, required, additionalProperties: false, ...(schemaDefs ? { $defs: schemaDefs } : {}) } as Tool["inputSchema"];
   assertSchemaBudget(inputSchema, limits);
   new AjvJsonSchemaValidator().getValidator(inputSchema as JsonSchemaType);
