@@ -17,13 +17,16 @@ import {
 import { api } from "./api";
 import { ServicesPage } from "./ServicesPage";
 import { ImportPage } from "./ImportPage";
+import { UsageCard } from "./UsageCard";
+import { AuditPage } from "./AuditPage";
+import type { Service } from "./service-types";
 
 type User = { id: string; username: string; active: boolean; isAdmin: boolean; roleIds: string[] };
 type Role = { id: string; name: string; isAdmin: boolean };
 type Resource = { id: string; type: "service" | "tool" | "skill"; visibility: "public" | "restricted"; parentId: string | null; name: string; description: string };
 type ApiKey = { id: string; userId?: string; name: string; value: string; expiresAt: string | null; revokedAt: string | null; createdAt: string };
 type SessionUser = { id: string; username: string; isAdmin: boolean };
-type View = "overview" | "users" | "roles" | "keys" | "services" | "imports";
+type View = "overview" | "users" | "roles" | "keys" | "services" | "imports" | "audit";
 
 export default function App() {
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -63,6 +66,7 @@ export default function App() {
         { id: "overview" as const, label: "概览", icon: Activity },
         { id: "services" as const, label: "MCP 服务", icon: Boxes },
         { id: "imports" as const, label: "REST 导入", icon: Plus },
+        { id: "audit" as const, label: "调用审计", icon: Activity },
         { id: "users" as const, label: "用户", icon: Users },
         { id: "roles" as const, label: "角色与授权", icon: Shield },
         { id: "keys" as const, label: "API Keys", icon: KeyRound },
@@ -101,6 +105,7 @@ export default function App() {
           {view === "overview" && <Overview user={user} onPasswordChanged={() => setUser(null)} />}
           {view === "services" && user.isAdmin && <ServicesPage setError={setError} />}
           {view === "imports" && user.isAdmin && <ImportPage />}
+          {view === "audit" && user.isAdmin && <AuditPage />}
           {view === "users" && user.isAdmin && <UsersPage setError={setError} onReveal={setReveal} onOpenKeys={(userId) => { setKeyOwner(userId); setView("keys"); }} />}
           {view === "roles" && user.isAdmin && <RolesPage setError={setError} />}
           {view === "keys" && <KeysPage user={user} ownerId={keyOwner ?? user.id} setError={setError} onReveal={setReveal} />}
@@ -178,7 +183,7 @@ function Overview({ user, onPasswordChanged }: { user: SessionUser; onPasswordCh
   return (
     <section>
       <div className="section-heading">
-        <div><p className="eyebrow">平台概览</p><h1>欢迎，{user.username}</h1><p className="section-description">{user.isAdmin ? "管理本地用户、角色授權与 API 凭证。" : "管理你的 Agent API 凭证。"}</p></div>
+        <div><p className="eyebrow">平台概览</p><h1>欢迎，{user.username}</h1><p className="section-description">{user.isAdmin ? "管理服务、角色授权与 API 凭证。" : "管理你的 Agent API 凭证。"}</p></div>
         <button className="icon-button" onClick={() => setRefreshToken((value) => value + 1)} aria-label="刷新状态" title="刷新状态"><RefreshCw size={16} /></button>
       </div>
       <div className="summary-grid">
@@ -186,11 +191,9 @@ function Overview({ user, onPasswordChanged }: { user: SessionUser; onPasswordCh
         <div className="summary-item"><span className="summary-label">数据库</span><strong className={health?.database === "ok" ? "good-text" : "bad-text"}>{health?.database === "ok" ? "SQLite 已连接" : "不可用"}</strong><small>单实例持久化</small></div>
         <div className="summary-item"><span className="summary-label">你的 API Keys</span><strong>{keys.filter((key) => !key.revokedAt).length}</strong><small>已签发凭证</small></div>
       </div>
-      <div className="section-subheading"><div><h2>当前阶段</h2><p>资源目录使用 demo 条目验证角色可见性，暂不执行 MCP 工具。</p></div></div>
-      <div className="service-list">
-        <div className="service-row"><div className="service-icon api-icon">MCP</div><div className="service-info"><strong>Demo MCP Service</strong><span>工具与下游调用将在后续阶段接入</span></div><span className="state-label">目录占位</span></div>
-        <div className="service-row"><div className="service-icon skills-icon">SK</div><div className="service-info"><strong>Skills 条目</strong><span>公共与角色授权条目占位</span></div><span className="state-label">目录占位</span></div>
-      </div>
+      <UsageCard refreshToken={refreshToken} />
+      <div className="section-subheading"><div><h2>MCP 接入</h2><p>使用你的 API Key 作为 Bearer 凭证，连接当前实例的 MCP 地址。</p></div></div>
+      <div className="service-list"><div className="service-row"><div className="service-icon api-icon">MCP</div><div className="service-info"><strong>{window.location.origin}/mcp</strong><span>工具列表按角色授权过滤；服务目录授权不会自动开放子工具。</span></div></div></div>
       <div className="section-subheading password-section"><div><h2>修改密码</h2><p>修改后当前账号的所有网页会话都会退出。</p></div></div>
       <form className="inline-create password-form" onSubmit={(event) => void changePassword(event)}><label>当前密码<input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} required /></label><label>新密码<input type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required /></label><button className="primary-button">更新密码</button>{passwordMessage && <span className="form-error">{passwordMessage}</span>}</form>
     </section>
@@ -277,10 +280,11 @@ function RolesPage({ setError }: { setError: (error: string) => void }) {
   const [saving, setSaving] = useState(false);
   const load = useCallback(async () => {
     try {
-      const [roleResult, resourceResult] = await Promise.all([api<{ roles: Role[] }>("/api/admin/roles"), api<{ resources: Resource[] }>("/api/admin/resources")]);
+      const [roleResult, resourceResult, serviceResult] = await Promise.all([api<{ roles: Role[] }>("/api/admin/roles"), api<{ resources: Resource[] }>("/api/admin/resources"), api<{ services: Service[] }>("/api/admin/services")]);
       const customRoles = roleResult.roles.filter((role) => !role.isAdmin);
       setRoles(customRoles);
-      setResources(resourceResult.resources);
+      const serviceIds = new Set(serviceResult.services.map((service) => service.id));
+      setResources(resourceResult.resources.filter((resource) => resource.type === "skill" || serviceIds.has(resource.parentId ?? resource.id)));
       setSelectedRole((current) => customRoles.some((role) => role.id === current) ? current : customRoles[0]?.id ?? "");
       setError("");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "无法加载角色"); }
@@ -323,7 +327,7 @@ function RolesPage({ setError }: { setError: (error: string) => void }) {
       <div className="role-layout">
         <nav className="role-list" aria-label="角色列表">{roles.map((role) => <button key={role.id} className={`role-nav-item ${selectedRole === role.id ? "selected" : ""}`} onClick={() => setSelectedRole(role.id)}><Shield size={15} />{role.name}</button>)}{!roles.length && <p className="muted role-empty">暂无自定义角色</p>}</nav>
         <div className="grant-panel">
-          <div className="subsection-heading"><div><h2>{roles.find((role) => role.id === selectedRole)?.name ?? "资源授权"}</h2><p>Demo 资源仅用于验证授权，不会执行调用。</p></div><div className="button-row"><button className="icon-button danger-icon" onClick={() => void deleteRole()} disabled={!selectedRole} aria-label="删除角色" title="删除角色"><Trash2 size={15} /></button><button className="primary-button" onClick={() => void saveGrants()} disabled={!selectedRole || saving}>{saving ? "保存中…" : "保存授权"}</button></div></div>
+          <div className="subsection-heading"><div><h2>{roles.find((role) => role.id === selectedRole)?.name ?? "资源授权"}</h2><p>按工具精确授权，多角色权限取并集；服务授权仅开放目录。</p></div><div className="button-row"><button className="icon-button danger-icon" onClick={() => void deleteRole()} disabled={!selectedRole} aria-label="删除角色" title="删除角色"><Trash2 size={15} /></button><button className="primary-button" onClick={() => void saveGrants()} disabled={!selectedRole || saving}>{saving ? "保存中…" : "保存授权"}</button></div></div>
           <ResourceGroup title="MCP 服务与工具" resources={resources.filter((resource) => resource.type !== "skill")} grants={grants} onToggle={toggleGrant} />
           <ResourceGroup title="Agent Plugins / Skills" resources={resources.filter((resource) => resource.type === "skill")} grants={grants} onToggle={toggleGrant} />
         </div>
