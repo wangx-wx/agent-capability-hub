@@ -150,6 +150,27 @@ td strong { color: #2b332e; font-size: 12px; font-weight: 600; }
 .secret-value code { min-width: 0; flex: 1; color: #315841; font-size: 12px; overflow-wrap: anywhere; }
 .dialog-done { min-width: 105px; margin: 18px 0 0 auto; display: flex; }
 
+.editor-panel { display: grid; gap: 15px; border: 1px solid #dfe5e0; border-radius: 7px; background: #fff; padding: 20px; margin: 18px 0; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.full-width { grid-column: 1 / -1; }
+.form-stack select, .form-stack textarea { padding: 9px; border: 1px solid #d5ddd7; border-radius: 5px; background: #fff; color: inherit; font: inherit; }
+.json-editor { display: block; width: 100%; min-height: 130px; margin: 7px 0; padding: 10px; border: 1px solid #d5ddd7; border-radius: 5px; font: 12px/1.6 ui-monospace, SFMono-Regular, monospace !important; resize: vertical; }
+.tall-editor { min-height: 270px; }
+.json-view { max-height: 420px; overflow: auto; padding: 12px; background: #f4f7f4; color: #3b5445; font: 11px/1.6 ui-monospace, SFMono-Regular, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.service-split { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 25px; }
+.source-list { display: grid; align-content: start; gap: 8px; }
+.source-item { display: grid; gap: 6px; padding: 14px; border: 1px solid #dfe5e0; border-radius: 6px; background: #fff; text-align: left; color: #43584b; overflow-wrap: anywhere; }
+.source-item.selected { border-color: #579379; background: #edf5ef; }
+.source-item small, .source-item span { color: #7b8580; font-size: 11px; }
+.source-actions { flex-wrap: wrap; margin-bottom: 22px; }
+.address-text { overflow-wrap: anywhere; }
+.tool-card { border-top: 1px solid #dfe5e0; padding: 16px 0; }
+.tool-card summary, .change-preview summary { font-size: 12px; cursor: pointer; }
+.tool-card strong { font-size: 13px; overflow-wrap: anywhere; }
+.change-preview { display: grid; gap: 13px; padding: 18px; margin-bottom: 20px; border: 1px solid #a9c8b5; border-radius: 6px; background: #f6faf7; font-size: 12px; }
+@media (max-width: 850px) { .service-split { grid-template-columns: 1fr; } .source-list { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); } }
+@media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } .editor-panel { padding: 14px; } }
+
 @media (max-width: 850px) {
   .app-shell { grid-template-columns: 185px minmax(0, 1fr); }
   .sidebar { padding-right: 10px; padding-left: 10px; }

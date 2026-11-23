@@ -14,27 +14,15 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { api } from "./api";
+import { ServicesPage } from "./ServicesPage";
 
 type User = { id: string; username: string; active: boolean; isAdmin: boolean; roleIds: string[] };
 type Role = { id: string; name: string; isAdmin: boolean };
 type Resource = { id: string; type: "service" | "tool" | "skill"; visibility: "public" | "restricted"; parentId: string | null; name: string; description: string };
 type ApiKey = { id: string; userId?: string; name: string; value: string; expiresAt: string | null; revokedAt: string | null; createdAt: string };
 type SessionUser = { id: string; username: string; isAdmin: boolean };
-type View = "overview" | "users" | "roles" | "keys";
-
-async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(path, {
-    ...options,
-    credentials: "same-origin",
-    headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers },
-  });
-  if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? `请求失败 (${response.status})`);
-  }
-  if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
-}
+type View = "overview" | "users" | "roles" | "keys" | "services";
 
 export default function App() {
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -72,6 +60,7 @@ export default function App() {
   const navigation = user.isAdmin
     ? [
         { id: "overview" as const, label: "概览", icon: Activity },
+        { id: "services" as const, label: "MCP 服务", icon: Boxes },
         { id: "users" as const, label: "用户", icon: Users },
         { id: "roles" as const, label: "角色与授权", icon: Shield },
         { id: "keys" as const, label: "API Keys", icon: KeyRound },
@@ -108,6 +97,7 @@ export default function App() {
         {error && <div className="notice error-notice" role="alert">{error}<button aria-label="关闭提示" onClick={() => setError("")}><X size={15} /></button></div>}
         <div className="page-content" key={view}>
           {view === "overview" && <Overview user={user} onPasswordChanged={() => setUser(null)} />}
+          {view === "services" && user.isAdmin && <ServicesPage setError={setError} />}
           {view === "users" && user.isAdmin && <UsersPage setError={setError} onReveal={setReveal} onOpenKeys={(userId) => { setKeyOwner(userId); setView("keys"); }} />}
           {view === "roles" && user.isAdmin && <RolesPage setError={setError} />}
           {view === "keys" && <KeysPage user={user} ownerId={keyOwner ?? user.id} setError={setError} onReveal={setReveal} />}
