@@ -51,12 +51,22 @@ export function registerServiceRoutes(app: Express, database: Kysely<DatabaseSch
     const actor = await resolveUser(request);
     if (!actor) { response.status(401).json({ error: "Authentication required" }); return; }
     if (!actor.isAdmin) { response.status(403).json({ error: "Administrator access required" }); return; }
+    response.locals.actorId = actor.id;
     next();
   });
   registerSyncRoutes(router, database, sources);
   registerToolTestRoutes(router, database, sources);
   registerServiceEditRoutes(router, database, sources);
   registerRestToolRoutes(router, database, sources.limits);
+  router.post("/:id/test-connection", async (request, response) => {
+    const service = await serviceQuery(database).where("services.id", "=", request.params.id).executeTakeFirst();
+    if (!service) { response.status(404).json({ error: "Service not found" }); return; }
+    if (service.kind === "rest") { response.json({ connectionStatus: "ready" }); return; }
+    try {
+      const serverInfo = await sources.withClient(service, async (client) => client.getServerVersion());
+      response.json({ connectionStatus: sources.status(service), serverInfo });
+    } catch (error) { response.json({ connectionStatus: sources.status(service), error: error instanceof Error ? error.message : "Connection failed" }); }
+  });
   router.get("/", async (_request, response) => {
     response.json({ services: (await serviceQuery(database).orderBy("resources.name").execute()).map((service) => presentService(service, sources.status(service))) });
   });

@@ -1,4 +1,4 @@
-import { Client, ProtocolError, SdkHttpError, SSEClientTransport, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
+import { Client, ProtocolError, SdkHttpError, SseError, SSEClientTransport, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import type { ServiceTable } from "./service-schema.js";
 import { resolveServiceCredentials, type CallerContext } from "./credentials.js";
 import { gatewayLimits, type GatewayLimits } from "./limits.js";
@@ -20,6 +20,7 @@ export class McpSources {
   constructor(readonly limits: GatewayLimits = gatewayLimits()) {}
 
   status(service: ServiceTable) {
+    if (service.kind === "rest") return "ready";
     const entry = this.clients.get(service.id);
     if (entry?.config === connectionConfig(service) && entry.connected) return "connected";
     const error = this.errors.get(service.id);
@@ -50,8 +51,10 @@ export class McpSources {
     };
     entry.ready = client.connect(transport, { timeout: service.timeoutSeconds * 1000 }).then(() => {
       entry.connected = true;
-      this.errors.delete(service.id);
-      this.retryCounts.delete(service.id);
+      if (this.clients.get(service.id) === entry) {
+        this.errors.delete(service.id);
+        this.retryCounts.delete(service.id);
+      }
       return client;
     }).catch(async (error) => {
       this.connectionFailed(service, error, client);
@@ -101,6 +104,7 @@ export class McpSources {
     if (timer) clearTimeout(timer);
     this.retries.delete(serviceId);
     this.errors.delete(serviceId);
+    this.retryCounts.delete(serviceId);
     const entry = this.clients.get(serviceId);
     this.clients.delete(serviceId);
     if (!entry) return;
@@ -127,7 +131,8 @@ export class McpSources {
     this.clients.delete(service.id);
     if (this.active.has(client)) this.retired.add(client);
     else void client.close().catch(() => {});
-    const authenticationFailed = error instanceof SdkHttpError && (error.status === 401 || error.status === 403);
+    const status = error instanceof SdkHttpError ? error.status : error instanceof SseError ? error.code : undefined;
+    const authenticationFailed = status === 401 || status === 403;
     this.errors.set(service.id, { config: connectionConfig(service), status: authenticationFailed ? "authentication_failed" : "disconnected" });
     if (authenticationFailed || this.stopped || !this.desired.has(service.id) || this.retries.has(service.id)) return;
     const count = this.retryCounts.get(service.id) ?? 0;

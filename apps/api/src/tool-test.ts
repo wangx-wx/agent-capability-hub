@@ -10,6 +10,6 @@ export function registerToolTestRoutes(router: Router, database: Kysely<Database
     if (!tool) { response.status(404).json({ error: "Tool not found" }); return; }
     const args = request.body?.arguments ?? {};
     if (!args || typeof args !== "object" || Array.isArray(args)) { response.status(400).json({ error: "Arguments must be an object" }); return; }
-    response.json({ result: await executeTool(database, sources, tool.id, args, { userId: "administrator-test", isAdmin: true }) });
+    response.json({ result: await executeTool(database, sources, tool.id, args, { userId: response.locals.actorId, isAdmin: true }) });
   });
 }
