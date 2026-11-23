@@ -40,10 +40,20 @@ export function schemaContext(document: Record<string, unknown>) {
     }
     return Array.isArray(node.allOf) && node.allOf.some((schema) => readOnly(schema, seen));
   };
-  const normalize = (value: unknown): unknown => {
+  const normalize = (value: unknown, inheritedDialect: unknown = document.jsonSchemaDialect): unknown => {
     if (typeof value === "boolean") return value;
     const node = object(value);
     const result = { ...node };
+    const dialect = node.$schema ?? inheritedDialect;
+    if (!legacy && dialect !== undefined && !["https://json-schema.org/draft/2020-12/schema", "https://spec.openapis.org/oas/3.1/dialect/base"].includes(String(dialect))) throw new Error("Unsupported JSON Schema dialect");
+    if (node.$vocabulary !== undefined) {
+      const supported = new Set(["core", "applicator", "unevaluated", "validation", "meta-data", "format-annotation", "content"].map((name) => `https://json-schema.org/draft/2020-12/vocab/${name}`));
+      supported.add("https://spec.openapis.org/oas/3.1/vocab/base");
+      for (const [name, required] of Object.entries(object(node.$vocabulary))) {
+        if (typeof required !== "boolean" || (required && !supported.has(name))) throw new Error("Unsupported required JSON Schema vocabulary");
+      }
+    }
+    if (result.$schema === "https://spec.openapis.org/oas/3.1/dialect/base") result.$schema = "https://json-schema.org/draft/2020-12/schema";
     if (legacy) {
       if (Array.isArray(node.type)) throw new Error("OpenAPI 3.0 type arrays are unsupported");
       if (node.nullable !== undefined && typeof node.nullable !== "boolean") throw new Error("Invalid OpenAPI nullable value");
@@ -65,16 +75,16 @@ export function schemaContext(document: Record<string, unknown>) {
       result.$ref = `#/$defs/${key}`;
     }
     for (const keyword of ["properties", "patternProperties", "$defs", "definitions", "dependentSchemas"]) {
-      if (node[keyword] !== undefined) result[keyword] = Object.fromEntries(Object.entries(object(node[keyword])).map(([name, schema]) => [name, normalize(schema)]));
+      if (node[keyword] !== undefined) result[keyword] = Object.fromEntries(Object.entries(object(node[keyword])).map(([name, schema]) => [name, normalize(schema, dialect)]));
     }
     for (const keyword of ["allOf", "anyOf", "oneOf", "prefixItems"]) {
       if (node[keyword] !== undefined) {
         if (!Array.isArray(node[keyword])) throw new Error("Invalid schema composition");
-        result[keyword] = (node[keyword] as unknown[]).map(normalize);
+        result[keyword] = (node[keyword] as unknown[]).map((schema) => normalize(schema, dialect));
       }
     }
     for (const keyword of ["items", "additionalItems", "additionalProperties", "propertyNames", "contains", "not", "if", "then", "else", "unevaluatedProperties", "unevaluatedItems"]) {
-      if (node[keyword] !== undefined) result[keyword] = Array.isArray(node[keyword]) ? (node[keyword] as unknown[]).map(normalize) : normalize(node[keyword]);
+      if (node[keyword] !== undefined) result[keyword] = Array.isArray(node[keyword]) ? (node[keyword] as unknown[]).map((schema) => normalize(schema, dialect)) : normalize(node[keyword], dialect);
     }
     if (Array.isArray(node.required) && node.properties) {
       const properties = object(node.properties);
