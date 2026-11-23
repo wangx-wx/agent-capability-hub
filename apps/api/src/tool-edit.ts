@@ -4,6 +4,7 @@ import type { DatabaseSchema } from "./database.js";
 import type { GatewayLimits } from "./limits.js";
 import { serviceQuery } from "./services.js";
 import { defineRestTool, type RestTool } from "./rest-definition.js";
+import { restOperationExists } from "./rest-tools.js";
 
 export function registerToolEditRoutes(router: Router, database: Kysely<DatabaseSchema>, limits: GatewayLimits) {
   for (const method of ["patch", "put"] as const) {
@@ -18,6 +19,7 @@ export function registerToolEditRoutes(router: Router, database: Kysely<Database
         tool = defineRestTool(method === "put" ? request.body : { ...old.rest, name: row.originalName, description: old.description, example: old.example, ...request.body }, limits);
         if (`${service.namespace}__${tool.name}`.length > 128) throw new Error("Public tool name exceeds 128 characters");
       } catch (error) { response.status(400).json({ error: error instanceof Error ? error.message : "Invalid operation" }); return; }
+      if (await restOperationExists(database, service.id, tool, row.id)) { response.status(409).json({ error: "HTTP method/path operation already exists" }); return; }
       await database.transaction().execute(async (transaction) => {
         await transaction.updateTable("resources").set({ name: `${service.namespace}__${tool.name}`, description: tool.description ?? "" }).where("id", "=", row.id).execute();
         await transaction.updateTable("tools").set({ originalName: tool.name, definition: JSON.stringify(tool) }).where("id", "=", row.id).execute();
