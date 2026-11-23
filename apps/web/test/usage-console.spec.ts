@@ -50,4 +50,5 @@ test("role grants, user keys, formal calls and private usage statistics form a c
   await page.getByRole("button", { name: "登录", exact: true }).click();
   await page.getByRole("button", { name: "调用审计", exact: true }).click();
   await expect(page.getByRole("cell", { name: "usage__echo", exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("admin-audit.png"), fullPage: true });
 });

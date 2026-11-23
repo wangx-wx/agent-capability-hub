@@ -1,0 +1,15 @@
+$ pnpm -r build
+Scope: 2 of 3 workspace projects
+apps/api build$ tsc -p tsconfig.build.json
+apps/web build$ tsc --noEmit && vite build
+apps/web build: vite v7.3.8 building client environment for production...
+apps/web build: transforming...
+apps/api build: Done
+apps/web build: ✓ 1683 modules transformed.
+apps/web build: rendering chunks...
+apps/web build: computing gzip size...
+apps/web build: dist/index.html                   0.46 kB │ gzip:  0.32 kB
+apps/web build: dist/assets/index-B9nBvSDD.css   14.63 kB │ gzip:  3.85 kB
+apps/web build: dist/assets/index-CkBb2Tyq.js   270.48 kB │ gzip: 82.91 kB
+apps/web build: ✓ built in 1.52s
+apps/web build: Done

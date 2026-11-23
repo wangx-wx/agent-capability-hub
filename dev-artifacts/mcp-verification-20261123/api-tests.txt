@@ -1,0 +1,76 @@
+$ pnpm --filter @ach/api test
+$ vitest run
+
+ RUN  v3.2.7 /Users/wangx/workspace/aaa/github/agent-capability-hub/apps/api
+
+ ✓ test/deployment.test.ts (1 test) 868ms
+   ✓ binds the production API to the deployment-configured host  867ms
+ ✓ test/rest-reimport.test.ts (1 test) 311ms
+   ✓ matches reimports by HTTP method and path while preserving grants and unselected tools  310ms
+ ✓ test/mcp-call.test.ts (1 test) 361ms
+   ✓ executes an authorized tool with service credentials and records only formal attempts  360ms
+ ✓ test/audit-failure.test.ts (3 tests) 519ms
+ ✓ test/service-connection.test.ts (1 test) 292ms
+ ✓ test/openapi-legacy.test.ts (1 test) 417ms
+   ✓ preserves OpenAPI 3.0 nullable, enum, exclusive bounds and request-only required semantics  416ms
+ ✓ test/mcp-legacy.test.ts (2 tests) 432ms
+   ✓ serves legacy SDK clients without creating an upstream session  300ms
+ ✓ test/mcp-access-changes.test.ts (1 test) 411ms
+   ✓ applies changed role grants and revoked keys to new formal calls while retaining user history  410ms
+ ✓ test/mcp-reconnect.test.ts (1 test) 1330ms
+   ✓ reconnects after a network failure without replaying the call or changing the confirmed catalog  1330ms
+ ✓ test/auth.test.ts (6 tests) 1550ms
+   ✓ account login > blocks a disabled user immediately and allows the account to be re-enabled  340ms
+   ✓ account login > lets an administrator reset a user's password and revokes the user's sessions  402ms
+ ✓ test/mcp.test.ts (1 test) 370ms
+   ✓ MCP gateway > lets an authenticated SDK client discover the 2026 tools capability  369ms
+ ✓ test/rest-responses.test.ts (1 test) 472ms
+   ✓ preserves text, empty and error bodies without applying examples or schema defaults  467ms
+ ✓ test/mcp-tool-history.test.ts (1 test) 413ms
+   ✓ preserves grants on schema updates but assigns a fresh unauthorized ID when a deleted tool reappears  412ms
+ ✓ test/openapi.test.ts (1 test) 540ms
+   ✓ groups OpenAPI targets and preserves recursive schemas while excluding unsupported operations  539ms
+ ✓ test/tool-management.test.ts (1 test) 508ms
+   ✓ edits a REST tool without losing grants and explicitly deletes it without losing history  507ms
+ ✓ test/mcp-lifecycle.test.ts (1 test) 518ms
+   ✓ renames public tools immediately while preserving IDs, grants and historical names  518ms
+ ✓ test/openapi-readonly.test.ts (1 test) 228ms
+ ✓ test/mcp-inflight.test.ts (1 test) 325ms
+   ✓ lets an issued call finish after disabling its service while rejecting new calls  324ms
+ ✓ test/mcp-sse.test.ts (1 test) 3269ms
+   ✓ injects static credentials into SSE GET and POST while preserving native media results  3268ms
+ ✓ test/capabilities.test.ts (1 test) 374ms
+   ✓ authorized demo capability listing > returns the union of role grants and applies grant changes to existing keys immediately  373ms
+ ✓ test/rest.test.ts (1 test) 429ms
+   ✓ executes confirmed REST mappings with grouped inputs and protected service headers  428ms
+ ✓ test/openapi-anchor.test.ts (1 test) 365ms
+   ✓ retains recursive internal anchors as self-contained references in imported tool schemas  365ms
+ ✓ test/curl-import.test.ts (1 test) 335ms
+   ✓ previews cURL parameters and service credentials without publishing until administrator confirmation  335ms
+ ✓ test/openapi-media.test.ts (1 test) 189ms
+ ✓ test/openapi-parameters.test.ts (1 test) 173ms
+ ✓ test/rest-path.test.ts (1 test) 194ms
+ ✓ test/mcp-cancellation.test.ts (1 test) 4249ms
+   ✓ attempts to propagate caller cancellation downstream without replaying the tool  4249ms
+ ✓ test/mcp-timeout.test.ts (1 test) 4318ms
+   ✓ times out an issued tool call without automatically sending it again  4317ms
+ ✓ test/mcp-sync-order.test.ts (1 test) 267ms
+ ✓ test/openapi-inputs.test.ts (1 test) 292ms
+ ✓ test/limits.test.ts (1 test) 340ms
+   ✓ enforces deployment request, streamed response and schema budgets before further work  340ms
+ ✓ test/mcp-sync.test.ts (1 test) 442ms
+   ✓ publishes all discovered pages only after administrator confirmation  441ms
+ ✓ test/tool-names.test.ts (1 test) 212ms
+ ✓ test/openapi-dialect.test.ts (1 test) 218ms
+ ✓ test/mcp-origin.test.ts (1 test) 190ms
+ ✓ test/curl-rejection.test.ts (1 test) 164ms
+ ✓ test/health.test.ts (1 test) 27ms
+ ✓ test/rest-identity.test.ts (1 test) 221ms
+ ✓ test/service-kind.test.ts (1 test) 205ms
+ ✓ test/services.test.ts (1 test) 233ms
+ ✓ test/mcp-discovery-validation.test.ts (1 test) 300ms
+
+ Test Files  41 passed (41)
+      Tests  49 passed (49)
+   Start at  11:33:20
+   Duration  6.18s (transform 807ms, setup 0ms, collect 19.48s, tests 26.87s, environment 4ms, prepare 2.07s)

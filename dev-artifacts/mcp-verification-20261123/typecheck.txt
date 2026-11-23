@@ -1,0 +1,6 @@
+$ pnpm -r typecheck
+Scope: 2 of 3 workspace projects
+apps/api typecheck$ tsc --noEmit
+apps/web typecheck$ tsc --noEmit --pretty false
+apps/web typecheck: Done
+apps/api typecheck: Done

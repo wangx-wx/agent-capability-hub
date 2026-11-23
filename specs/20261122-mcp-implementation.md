@@ -1,5 +1,6 @@
 # MCP 与 REST 接入实施记录
 
+本文件保留 2026-11-22 的阶段记录；后续完成状态及最终验收见 [交付记录](20261123-mcp-delivery.md)。
 ## 依据与分支
 
 依据 [接入规格](20261122-mcp-rest-integration.md)和 [TDD 测试边界](20261122-mcp-tdd-boundaries.md)，于 2026-11-22 开始实施。用户明确要求继续使用 `dev_mcp_research_261121`。完成前不合入 main，不推送远端。
