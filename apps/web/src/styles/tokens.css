@@ -1,4 +1,0 @@
-/* Legacy token bridge: primary palette variables live in theme.css. */
-:root {
-  --accent-legacy-compat: var(--accent);
-}

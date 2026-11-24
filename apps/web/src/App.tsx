@@ -19,7 +19,6 @@ import type { SecretReveal, SessionUser } from "./types";
 export default function App() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [reveal, setReveal] = useState<SecretReveal | null>(null);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [managedKeyOwnerName, setManagedKeyOwnerName] = useState<string | null>(null);
@@ -28,12 +27,11 @@ export default function App() {
   userRef.current = user;
 
   const { route, navigate } = useHashRoute(Boolean(user?.isAdmin));
-  const { health } = useHealth(Boolean(user));
+  const { health, refreshing: healthRefreshing, refresh: refreshHealth } = useHealth(Boolean(user));
 
   const resetSessionState = useCallback(() => {
     setUser(null);
     setReveal(null);
-    setError("");
     setPasswordModalOpen(false);
     setManagedKeyOwnerName(null);
   }, []);
@@ -82,7 +80,6 @@ export default function App() {
         <LoginPage
           onLogin={(loggedIn) => {
             setUser(loggedIn);
-            setError("");
           }}
         />
       ) : (
@@ -91,26 +88,23 @@ export default function App() {
             user={user}
             view={route.view}
             health={health}
-            error={error}
+            error=""
             breadcrumbs={breadcrumbs}
-            onSelectView={(nextView) => {
-              navigate(nextView);
-              setError("");
-            }}
-            onClearError={() => setError("")}
+            onSelectView={(nextView) => navigate(nextView)}
+            onClearError={() => undefined}
             onOpenPasswordModal={() => setPasswordModalOpen(true)}
             onLogout={() => void logout()}
           >
             {route.view === "overview" && (
               <OverviewPage
                 user={user}
-                onPasswordChanged={() => {
-                  resetSessionState();
-                  toast.success("密码已更新，请重新登录");
-                }}
+                health={health}
+                healthRefreshing={healthRefreshing}
+                onRefreshHealth={refreshHealth}
+                onNavigate={(nextView) => navigate(nextView)}
               />
             )}
-            {route.view === "services" && user.isAdmin && <ServicesPage setError={setError} />}
+            {route.view === "services" && user.isAdmin && <ServicesPage />}
             {route.view === "audit" && user.isAdmin && <AuditPage />}
             {route.view === "users" && user.isAdmin && (
               <UsersPage
@@ -120,7 +114,7 @@ export default function App() {
                 onNavigateRoles={() => navigate("roles")}
               />
             )}
-            {route.view === "roles" && user.isAdmin && <RolesPage setError={setError} />}
+            {route.view === "roles" && user.isAdmin && <RolesPage />}
             {route.view === "keys" && (
               <KeysPage
                 user={user}
