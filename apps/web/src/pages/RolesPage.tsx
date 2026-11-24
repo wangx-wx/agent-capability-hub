@@ -1,236 +1,400 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useId, useMemo, useState, type FormEvent } from "react";
 import { Plus, RefreshCw, Shield, Trash2 } from "lucide-react";
-import { api } from "../lib/api";
-import type { Resource, Role, Service } from "../types";
+import { toast } from "sonner";
+import { api, errorMessage } from "../lib/api";
+import { useRoleManager } from "../hooks/useRoleManager";
+import { PageHeader } from "../components/layout/PageHeader";
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  Field,
+  Input,
+  Modal,
+  SearchInput,
+  Skeleton,
+  Switch,
+  cn,
+} from "../components/ui";
+import { RoleGrantTree } from "../components/domain/RoleGrantTree";
+import type { Role } from "../types";
 
-export function RolesPage({ setError }: { setError: (error: string) => void }) {
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [selectedRole, setSelectedRole] = useState("");
-  const [grants, setGrants] = useState<string[]>([]);
-  const [roleName, setRoleName] = useState("");
-  const [saving, setSaving] = useState(false);
+export function RolesPage({ setError: _setError }: { setError?: (error: string) => void }) {
+  const manager = useRoleManager();
+  const [roleSearch, setRoleSearch] = useState("");
+  const [toolSearch, setToolSearch] = useState("");
+  const [onlyGranted, setOnlyGranted] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
 
-  const load = useCallback(async () => {
-    try {
-      const [roleResult, resourceResult, serviceResult] = await Promise.all([
-        api<{ roles: Role[] }>("/api/admin/roles"),
-        api<{ resources: Resource[] }>("/api/admin/resources"),
-        api<{ services: Service[] }>("/api/admin/services"),
-      ]);
-      const customRoles = roleResult.roles.filter((role) => !role.isAdmin);
-      setRoles(customRoles);
-      const serviceIds = new Set(serviceResult.services.map((service) => service.id));
-      setResources(
-        resourceResult.resources.filter(
-          (resource) => resource.type === "skill" || serviceIds.has(resource.parentId ?? resource.id),
-        ),
-      );
-      setSelectedRole((current) =>
-        customRoles.some((role) => role.id === current) ? current : customRoles[0]?.id ?? "",
-      );
-      setError("");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "无法加载角色");
-    }
-  }, [setError]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newRoleName, setNewRoleName] = useState("");
+  const [createError, setCreateError] = useState("");
+  const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{ label: string; run: () => void } | null>(null);
+  const newRoleInputId = useId();
 
-  useEffect(() => {
-    if (!selectedRole) {
-      setGrants([]);
+  const guardDirty = (label: string, run: () => void) => {
+    if (manager.dirtyCount > 0) {
+      setPendingAction({ label, run });
       return;
     }
-    void api<{ resourceIds: string[] }>(`/api/admin/roles/${selectedRole}/resources`)
-      .then((result) => setGrants(result.resourceIds))
-      .catch(() => setGrants([]));
-  }, [selectedRole]);
+    run();
+  };
+
+  const selectedRole = useMemo(
+    () => manager.roles.find((role) => role.id === manager.selectedRoleId) ?? null,
+    [manager.roles, manager.selectedRoleId],
+  );
+
+  const visibleRoles = useMemo(() => {
+    const q = roleSearch.trim().toLowerCase();
+    return q ? manager.roles.filter((role) => role.name.toLowerCase().includes(q)) : manager.roles;
+  }, [manager.roles, roleSearch]);
 
   const createRole = async (event: FormEvent) => {
     event.preventDefault();
+    const trimmed = newRoleName.trim();
+    if (!trimmed) {
+      setCreateError("请输入角色名称");
+      return;
+    }
+    setCreating(true);
+    setCreateError("");
     try {
       const result = await api<{ role: Role }>("/api/admin/roles", {
         method: "POST",
-        body: JSON.stringify({ name: roleName }),
+        body: JSON.stringify({ name: trimmed }),
       });
-      setRoleName("");
-      await load();
-      setSelectedRole(result.role.id);
+      setNewRoleName("");
+      setCreateOpen(false);
+      toast.success(`已创建角色 ${result.role.name}`);
+      await manager.loadAll(result.role.id);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "创建角色失败");
-    }
-  };
-
-  const saveGrants = async () => {
-    setSaving(true);
-    try {
-      await api(`/api/admin/roles/${selectedRole}/resources`, {
-        method: "PUT",
-        body: JSON.stringify({ resourceIds: grants }),
-      });
-      setError("");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "保存授权失败");
+      setCreateError(errorMessage(reason));
     } finally {
-      setSaving(false);
+      setCreating(false);
     }
   };
 
-  const deleteRole = async () => {
+  const confirmDeleteRole = async () => {
     if (!selectedRole) return;
+    setDeleting(true);
     try {
-      await api<void>(`/api/admin/roles/${selectedRole}`, { method: "DELETE" });
-      setSelectedRole("");
-      await load();
+      await api<void>(`/api/admin/roles/${selectedRole.id}`, { method: "DELETE" });
+      toast.success(`已删除角色 ${selectedRole.name}`);
+      setDeleteOpen(false);
+      manager.setSelectedRoleId("");
+      await manager.loadAll();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "删除角色失败");
+      toast.error(errorMessage(reason));
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const toggleGrant = (resourceId: string) => {
-    setGrants((current) =>
-      current.includes(resourceId)
-        ? current.filter((id) => id !== resourceId)
-        : [...current, resourceId],
-    );
+  const allExpanded = manager.services.every((service) => expandedIds[service.id] ?? true);
+  const toggleAllExpanded = () => {
+    const nextValue = !allExpanded;
+    const next: Record<string, boolean> = {};
+    for (const service of manager.services) next[service.id] = nextValue;
+    setExpandedIds(next);
   };
 
   return (
-    <section>
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">
-            <span className="eyebrow-index">06</span>
-            <span>授权策略</span>
-          </p>
-          <h1>角色与资源</h1>
-          <p className="section-description">允许的资源同时对用户可见；未授权资源默认隐藏。</p>
-        </div>
-        <button
-          type="button"
-          className="icon-button"
-          onClick={() => void load()}
-          aria-label="刷新角色"
-          title="刷新"
-        >
-          <RefreshCw size={15} strokeWidth={1.5} />
-        </button>
-      </div>
-
-      <form className="inline-create role-create" onSubmit={(event) => void createRole(event)}>
-        <label className="field-grow">
-          新角色名称
-          <input value={roleName} onChange={(event) => setRoleName(event.target.value)} required />
-        </label>
-        <button className="btn btn-primary">
-          <Plus size={14} strokeWidth={1.5} />
-          <span>创建角色</span>
-        </button>
-      </form>
-
-      <div className="role-layout">
-        <nav className="role-list" aria-label="角色列表">
-          {roles.map((role) => (
-            <button
-              type="button"
-              key={role.id}
-              className={`role-nav-item ${selectedRole === role.id ? "selected" : ""}`}
-              onClick={() => setSelectedRole(role.id)}
+    <section className="flex flex-col">
+      <PageHeader
+        title="角色与授权"
+        description="按服务与工具粒度分配角色访问权限；多角色取并集，未授权资源默认隐藏并拒绝调用。"
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              disabled={manager.refreshingPage}
+              onClick={() =>
+                guardDirty("刷新将丢失尚未保存的授权更改", () => {
+                  void manager.loadAll(manager.selectedRoleId);
+                  if (manager.selectedRoleId) void manager.loadGrants(manager.selectedRoleId);
+                })
+              }
+              aria-label="刷新角色"
             >
-              <Shield size={14} strokeWidth={1.5} />
-              <span>{role.name}</span>
-            </button>
-          ))}
-          {!roles.length && <p className="muted role-empty">暂无自定义角色</p>}
-        </nav>
+              <RefreshCw
+                size={14}
+                strokeWidth={1.75}
+                className={cn(manager.refreshingPage && "animate-spin")}
+              />
+              <span>刷新</span>
+            </Button>
+            <Button variant="primary" onClick={() => setCreateOpen(true)}>
+              <Plus size={14} strokeWidth={1.75} />
+              <span>新建角色</span>
+            </Button>
+          </>
+        }
+      />
 
-        <div className="grant-panel">
-          <div className="subsection-heading">
-            <div>
-              <h2>{roles.find((role) => role.id === selectedRole)?.name ?? "资源授权"}</h2>
-              <p>按工具精确授权，多角色权限取并集；服务授权仅开放目录。</p>
-            </div>
-            <div className="button-row">
-              <button
-                type="button"
-                className="icon-button danger-icon"
-                onClick={() => void deleteRole()}
-                disabled={!selectedRole}
-                aria-label="删除角色"
-                title="删除角色"
-              >
-                <Trash2 size={15} strokeWidth={1.5} />
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => void saveGrants()}
-                disabled={!selectedRole || saving}
-              >
-                {saving ? "保存中…" : "保存授权"}
-              </button>
-            </div>
-          </div>
-
-          <ResourceGroup
-            title="MCP 服务与工具"
-            resources={resources.filter((resource) => resource.type !== "skill")}
-            grants={grants}
-            onToggle={toggleGrant}
-          />
-          <ResourceGroup
-            title="Agent Plugins / Skills"
-            resources={resources.filter((resource) => resource.type === "skill")}
-            grants={grants}
-            onToggle={toggleGrant}
-          />
+      {manager.pageError ? (
+        <EmptyState
+          title="无法加载角色与授权数据"
+          description={manager.pageError}
+          action={
+            <Button variant="primary" onClick={() => void manager.loadAll(manager.selectedRoleId)}>
+              重试
+            </Button>
+          }
+        />
+      ) : manager.loadingPage ? (
+        <div className="grid grid-cols-[240px_minmax(0,1fr)] max-[1024px]:grid-cols-1 gap-4">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-96 w-full" />
         </div>
-      </div>
-    </section>
-  );
-}
+      ) : manager.roles.length === 0 ? (
+        <EmptyState
+          icon={<Shield size={20} strokeWidth={1.75} />}
+          title="尚未创建自定义角色"
+          description="创建角色后即可按工具粒度配置访问策略，并在用户管理页分配给普通用户。"
+          action={
+            <Button variant="primary" onClick={() => setCreateOpen(true)}>
+              <Plus size={14} strokeWidth={1.75} />
+              <span>创建第一个角色</span>
+            </Button>
+          }
+        />
+      ) : (
+        <div className="grid grid-cols-[240px_minmax(0,1fr)] max-[1024px]:grid-cols-1 gap-4 items-start">
+          <aside className="rounded-[var(--radius-md)] border border-[#E2E5EC] bg-white p-3 flex flex-col gap-2.5 shadow-[var(--shadow-xs)]">
+            <SearchInput
+              value={roleSearch}
+              onValueChange={setRoleSearch}
+              placeholder="搜索角色…"
+              className="min-w-0 w-full"
+            />
+            <nav className="flex flex-col gap-1" aria-label="角色列表">
+              {visibleRoles.map((role) => {
+                const active = manager.selectedRoleId === role.id;
+                return (
+                  <button
+                    key={role.id}
+                    type="button"
+                    onClick={() => {
+                      if (role.id !== manager.selectedRoleId) {
+                        guardDirty(`切换至角色「${role.name}」将丢失尚未保存的修改`, () =>
+                          manager.setSelectedRoleId(role.id),
+                        );
+                      }
+                    }}
+                    className={cn(
+                      "w-full px-3 py-2.5 rounded-[var(--radius-sm)] text-left cursor-pointer transition-colors",
+                      active
+                        ? "bg-[#EFF6FF] text-[#1D4ED8]"
+                        : "hover:bg-[#EEF0F4] text-[#111827]",
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Shield size={14} strokeWidth={1.75} className="shrink-0" />
+                      <span className="text-[13px] font-medium truncate">{role.name}</span>
+                    </div>
+                    <div className="mt-1 pl-5 flex items-center gap-2 font-mono text-[11px] text-[#5B6270] tabular-nums">
+                      <span>{role.grantCount ?? 0} 项授权</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{role.userCount ?? 0} 人</span>
+                    </div>
+                  </button>
+                );
+              })}
+              {visibleRoles.length === 0 && (
+                <p className="py-4 text-center text-[12px] text-[#5B6270]">无匹配角色</p>
+              )}
+            </nav>
+          </aside>
 
-function ResourceGroup({
-  title,
-  resources,
-  grants,
-  onToggle,
-}: {
-  title: string;
-  resources: Resource[];
-  grants: string[];
-  onToggle: (id: string) => void;
-}) {
-  return (
-    <div className="resource-group">
-      <h3>{title}</h3>
-      {resources.map((resource) => (
-        <label key={resource.id} className="resource-row">
-          <input
-            type="checkbox"
-            checked={resource.visibility === "public" || grants.includes(resource.id)}
-            disabled={resource.visibility === "public"}
-            onChange={() => onToggle(resource.id)}
-          />
-          <span className="badge badge-mono">
-            {resource.type === "service"
-              ? "服务"
-              : resource.type === "tool"
-                ? "工具"
-                : resource.visibility === "public"
-                  ? "公开"
-                  : "特殊"}
-          </span>
-          <span className="resource-copy">
-            <strong className={resource.type === "tool" ? "mono" : undefined}>{resource.name}</strong>
-            <small>{resource.description}</small>
-          </span>
-        </label>
-      ))}
-      {!resources.length && <p className="muted">暂无资源</p>}
-    </div>
+          <div className="min-w-0 flex flex-col gap-4 pb-20">
+            <div className="rounded-[var(--radius-md)] border border-[#E2E5EC] bg-white p-4 flex flex-col gap-3 shadow-[var(--shadow-xs)]">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h2 className="text-[16px] font-semibold text-[#111827]">
+                    {selectedRole?.name ?? "资源授权"}
+                  </h2>
+                  <Badge tone="info" mono>
+                    已选 {manager.draftGrants.length} 项
+                  </Badge>
+                  {selectedRole && (selectedRole.userCount ?? 0) > 0 && (
+                    <Badge tone="neutral">已分配 {selectedRole.userCount} 名用户</Badge>
+                  )}
+                </div>
+
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={!selectedRole}
+                  className="text-[#B91C1C] hover:bg-[#FEF2F2] hover:text-[#B91C1C]"
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  <Trash2 size={14} strokeWidth={1.75} />
+                  <span>删除角色</span>
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#EEF0F4]">
+                <div className="flex flex-wrap items-center gap-3">
+                  <SearchInput
+                    value={toolSearch}
+                    onValueChange={setToolSearch}
+                    placeholder="搜索服务、工具或技能…"
+                    className="w-60 max-[768px]:w-full"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={onlyGranted}
+                      aria-label="仅看已授权"
+                      onCheckedChange={setOnlyGranted}
+                    />
+                    <span className="text-[12px] text-[#4B5563]">仅看已授权</span>
+                  </div>
+                </div>
+
+                <Button size="sm" variant="secondary" onClick={toggleAllExpanded}>
+                  {allExpanded ? "全部折叠" : "全部展开"}
+                </Button>
+              </div>
+            </div>
+
+            {manager.grantsError ? (
+              <EmptyState
+                title="加载角色授权失败"
+                description={manager.grantsError}
+                action={
+                  <Button
+                    variant="primary"
+                    onClick={() => void manager.loadGrants(manager.selectedRoleId)}
+                  >
+                    重试
+                  </Button>
+                }
+              />
+            ) : manager.loadingGrants ? (
+              <div className="flex flex-col gap-3">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            ) : (
+              <RoleGrantTree
+                services={manager.services}
+                resources={manager.resources}
+                grants={manager.draftGrants}
+                toolSearch={toolSearch}
+                onlyGranted={onlyGranted}
+                expandedIds={expandedIds}
+                onToggleExpand={(id) =>
+                  setExpandedIds((prev) => ({ ...prev, [id]: !(prev[id] ?? true) }))
+                }
+                onChangeGrants={manager.setDraftGrants}
+              />
+            )}
+
+            {manager.dirtyCount > 0 && (
+              <div className="sticky bottom-4 z-20 rounded-[var(--radius-md)] border border-[#BFDBFE] bg-white/95 backdrop-blur px-4 py-3 shadow-[var(--shadow-md)] flex flex-wrap items-center justify-between gap-3">
+                <span className="text-[13px] font-medium text-[#111827] tabular-nums">
+                  有 {manager.dirtyCount} 项未保存更改
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    disabled={manager.saving}
+                    onClick={() => manager.setDraftGrants(manager.savedGrants)}
+                  >
+                    撤销
+                  </Button>
+                  <Button
+                    variant="primary"
+                    loading={manager.saving}
+                    onClick={() => void manager.saveGrants()}
+                  >
+                    {manager.saving ? "保存中…" : "保存授权"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <Modal
+        open={createOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCreateOpen(false);
+            setNewRoleName("");
+            setCreateError("");
+          }
+        }}
+        title="新建角色"
+        description="创建后可在右侧授权树中按服务和工具精确授权。"
+        size="sm"
+        busy={creating}
+        footer={
+          <>
+            <Button variant="secondary" disabled={creating} onClick={() => setCreateOpen(false)}>
+              取消
+            </Button>
+            <Button type="submit" form="create-role-form" variant="primary" loading={creating}>
+              创建角色
+            </Button>
+          </>
+        }
+      >
+        <form id="create-role-form" onSubmit={(e) => void createRole(e)}>
+          <Field label="角色名称" htmlFor={newRoleInputId} required error={createError || undefined}>
+            <Input
+              id={newRoleInputId}
+              autoFocus
+              value={newRoleName}
+              placeholder="例如：数据分析员"
+              onChange={(event) => {
+                setNewRoleName(event.target.value);
+                if (createError) setCreateError("");
+              }}
+              required
+            />
+          </Field>
+        </form>
+      </Modal>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        tone="danger"
+        title="删除角色"
+        description={
+          (selectedRole?.userCount ?? 0) > 0
+            ? `该角色当前仍分配给 ${selectedRole?.userCount} 名用户，无法直接删除，请先在「用户」页面移除关联。`
+            : "删除角色将永久清空其关联的资源授权配置。"
+        }
+        entity={selectedRole?.name}
+        confirmLabel="确认删除"
+        busy={deleting}
+        onConfirm={confirmDeleteRole}
+      />
+
+      <ConfirmDialog
+        open={Boolean(pendingAction)}
+        onOpenChange={(open) => {
+          if (!open) setPendingAction(null);
+        }}
+        tone="warning"
+        title="放弃未保存的授权更改？"
+        description={pendingAction?.label}
+        confirmLabel="继续"
+        onConfirm={() => {
+          const run = pendingAction?.run;
+          setPendingAction(null);
+          run?.();
+        }}
+      />
+    </section>
   );
 }

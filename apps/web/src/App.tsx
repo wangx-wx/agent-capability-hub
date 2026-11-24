@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api, setUnauthorizedHandler } from "./lib/api";
 import { useHashRoute } from "./lib/router";
 import { useHealth } from "./hooks/useHealth";
 import { Toaster, TooltipProvider } from "./components/ui";
-import { AppShell } from "./components/layout/AppShell";
+import { AppShell, type BreadcrumbItem } from "./components/layout/AppShell";
 import { SecretDialog } from "./components/SecretDialog";
 import { PasswordModal } from "./components/domain/PasswordModal";
 import { LoginPage } from "./pages/LoginPage";
@@ -22,6 +22,7 @@ export default function App() {
   const [error, setError] = useState("");
   const [reveal, setReveal] = useState<SecretReveal | null>(null);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [managedKeyOwnerName, setManagedKeyOwnerName] = useState<string | null>(null);
 
   const userRef = useRef<SessionUser | null>(null);
   userRef.current = user;
@@ -34,6 +35,7 @@ export default function App() {
     setReveal(null);
     setError("");
     setPasswordModalOpen(false);
+    setManagedKeyOwnerName(null);
   }, []);
 
   useEffect(() => {
@@ -58,6 +60,17 @@ export default function App() {
     resetSessionState();
   };
 
+  const breadcrumbs = useMemo<BreadcrumbItem[] | undefined>(() => {
+    if (user?.isAdmin && route.view === "keys" && route.keyOwnerId && route.keyOwnerId !== user.id) {
+      return [
+        { label: "用户", onClick: () => navigate("users") },
+        { label: managedKeyOwnerName ?? "…" },
+        { label: "API Keys" },
+      ];
+    }
+    return undefined;
+  }, [user, route.view, route.keyOwnerId, managedKeyOwnerName, navigate]);
+
   return (
     <TooltipProvider>
       <Toaster />
@@ -79,6 +92,7 @@ export default function App() {
             view={route.view}
             health={health}
             error={error}
+            breadcrumbs={breadcrumbs}
             onSelectView={(nextView) => {
               navigate(nextView);
               setError("");
@@ -100,9 +114,10 @@ export default function App() {
             {route.view === "audit" && user.isAdmin && <AuditPage />}
             {route.view === "users" && user.isAdmin && (
               <UsersPage
-                setError={setError}
+                currentUserId={user.id}
                 onReveal={setReveal}
                 onOpenKeys={(userId) => navigate("keys", userId)}
+                onNavigateRoles={() => navigate("roles")}
               />
             )}
             {route.view === "roles" && user.isAdmin && <RolesPage setError={setError} />}
@@ -110,8 +125,10 @@ export default function App() {
               <KeysPage
                 user={user}
                 ownerId={route.keyOwnerId ?? user.id}
-                setError={setError}
                 onReveal={setReveal}
+                onBackToUsers={() => navigate("users")}
+                onSwitchToMine={() => navigate("keys")}
+                onOwnerResolved={setManagedKeyOwnerName}
               />
             )}
           </AppShell>
