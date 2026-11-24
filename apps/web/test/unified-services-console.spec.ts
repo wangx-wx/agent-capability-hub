@@ -23,6 +23,7 @@ test("administrator manages native MCP and manual REST tools through one service
   await page.getByRole("button", { name: "同步工具", exact: true }).click();
   await page.getByRole("button", { name: "确认同步", exact: true }).click();
   await expect(page.getByRole("button", { name: "试调用 unified-native__echo", exact: true })).toBeVisible();
+  await page.getByRole("dialog", { name: "Unified Native" }).getByRole("button", { name: "关闭", exact: true }).click();
 
   await page.getByRole("button", { name: "接入服务", exact: true }).click();
   await page.getByRole("button", { name: "REST API", exact: true }).click();
@@ -33,9 +34,10 @@ test("administrator manages native MCP and manual REST tools through one service
   await page.getByLabel("启用服务", { exact: true }).check();
   await page.getByRole("button", { name: "保存服务", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Unified REST", exact: true })).toBeVisible();
-  await expect(page.getByText("配置有效", { exact: true }).last()).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Unified REST" }).getByText("配置有效", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "同步工具", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "定义 REST 工具", exact: true }).click();
+  await page.getByRole("button", { name: "JSON 定义", exact: true }).click();
   await page.getByLabel("REST 工具定义", { exact: true }).fill(JSON.stringify({
     name: "read", method: "GET", path: "/read", parameters: [], example: {},
   }));
@@ -43,10 +45,14 @@ test("administrator manages native MCP and manual REST tools through one service
   await page.getByRole("button", { name: "试调用 unified-rest__read", exact: true }).click();
   await page.getByRole("button", { name: "执行试调用", exact: true }).click();
   await expect(page.getByTestId("tool-result")).toContainText("accepted");
-  await expect(page.getByRole("navigation", { name: "已登记服务" }).getByRole("button", { name: /^Unified Native/ })).toContainText("原生 MCP");
-  await expect(page.getByRole("navigation", { name: "已登记服务" }).getByRole("button", { name: /^Unified REST/ })).toContainText("REST API");
+  await page.getByRole("dialog", { name: "试调用：unified-rest__read" }).getByRole("button", { name: "关闭", exact: true }).click();
+  await page.getByRole("dialog", { name: "Unified REST" }).getByRole("button", { name: "关闭", exact: true }).click();
+  await expect(page.locator("article").filter({ hasText: "Unified Native" })).toContainText("原生 MCP");
+  await expect(page.locator("article").filter({ hasText: "Unified REST" })).toContainText("REST API");
   await page.screenshot({ path: testInfo.outputPath("unified-services.png"), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole("heading", { name: "Unified REST", exact: true }).scrollIntoViewIfNeeded();
+  await page.getByRole("heading", { name: "MCP 服务", exact: true }).scrollIntoViewIfNeeded();
+  await expect(page.getByRole("button", { name: "Unified REST", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Unified REST", exact: true }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("unified-services-mobile.png") });
 });

@@ -14,12 +14,15 @@ test("administrator registers and confirms MCP tools through the console", async
   await page.getByLabel("命名空间", { exact: true }).fill("browser");
   await page.getByLabel("启用服务", { exact: true }).check();
   await page.getByRole("button", { name: "保存服务", exact: true }).click();
-  await page.getByRole("button", { name: /^Browser Docs/ }).click();
+  await expect(page.getByRole("heading", { name: "Browser Docs", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "关闭", exact: true }).click();
+  await page.getByRole("button", { name: "Browser Docs", exact: true }).click();
   await page.getByRole("button", { name: "同步工具", exact: true }).click();
   await expect(page.getByRole("heading", { name: "同步差异", exact: true })).toBeVisible();
   await expect(page.getByText("browser__echo", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "确认同步", exact: true }).click();
   await page.getByRole("button", { name: "试调用 browser__echo", exact: true }).click();
+  await page.getByRole("button", { name: "JSON 参数", exact: true }).click();
   await page.getByLabel("试调用参数", { exact: true }).fill('{"text":"browser hello"}');
   await page.getByRole("button", { name: "执行试调用", exact: true }).click();
   await expect(page.getByTestId("tool-result")).toContainText("browser hello");

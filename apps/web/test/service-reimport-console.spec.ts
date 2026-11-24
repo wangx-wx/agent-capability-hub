@@ -18,7 +18,7 @@ test("administrator imports into the selected REST service while retaining tools
   const { role } = await (await page.request.post("/api/admin/roles", { data: { name: "Unified Import Role" } })).json();
   await page.request.put(`/api/admin/roles/${role.id}/resources`, { data: { resourceIds: [old.id] } });
   await page.getByRole("button", { name: "MCP 服务", exact: true }).click();
-  await page.getByRole("button", { name: /^Reimport Unified/ }).click();
+  await page.getByRole("button", { name: "Reimport Unified", exact: true }).click();
   await page.getByRole("button", { name: "导入工具", exact: true }).click();
   await expect(page.getByRole("heading", { name: "导入工具：Reimport Unified", exact: true })).toBeVisible();
   await page.getByLabel("导入原文", { exact: true }).fill(JSON.stringify({ openapi: "3.1.0", servers: [{ url }], paths: {
@@ -26,7 +26,7 @@ test("administrator imports into the selected REST service while retaining tools
     "/v1/new": { get: { operationId: "not-selected" } },
   } }));
   await page.getByRole("button", { name: "解析预览", exact: true }).click();
-  await expect(page.getByRole("combobox", { name: "保存方式", exact: true })).toHaveValue(service.id);
+  await expect(page.getByRole("combobox", { name: "保存方式", exact: true })).toContainText("更新 Reimport Unified");
   await expect(page.getByLabel("导入命名空间", { exact: true })).toHaveValue("reimport-unified");
   await expect(page.getByLabel("导入后启用", { exact: true })).toBeChecked();
   await page.getByLabel("选择 GET /v1/read", { exact: true }).check();
@@ -43,7 +43,7 @@ test("administrator imports into the selected REST service while retaining tools
   await page.getByRole("button", { name: "cURL", exact: true }).click();
   await page.getByLabel("导入原文", { exact: true }).fill(`curl '${url}/v1/read'`);
   await page.getByRole("button", { name: "解析预览", exact: true }).click();
-  await expect(page.getByRole("combobox", { name: "保存方式", exact: true })).toHaveValue(service.id);
+  await expect(page.getByRole("combobox", { name: "保存方式", exact: true })).toContainText("更新 Reimport Unified");
   await page.getByLabel("选择 GET /v1/read", { exact: true }).check();
   await page.getByRole("button", { name: "确认导入", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Reimport Unified", exact: true })).toBeVisible();
@@ -52,6 +52,8 @@ test("administrator imports into the selected REST service while retaining tools
 
   await page.getByRole("button", { name: "导入工具", exact: true }).click();
   await page.getByLabel("导入原文", { exact: true }).fill("unfinished import");
+  await page.getByRole("dialog", { name: "导入工具：Reimport Unified" }).getByRole("button", { name: "关闭", exact: true }).click();
+  await page.getByRole("dialog", { name: "Reimport Unified" }).getByRole("button", { name: "关闭", exact: true }).click();
   await page.getByRole("button", { name: "接入服务", exact: true }).click();
   await expect(page.getByRole("button", { name: "REST API", exact: true })).toHaveAttribute("aria-pressed", "false");
   await expect(page.getByLabel("导入原文", { exact: true })).toHaveCount(0);
@@ -60,5 +62,5 @@ test("administrator imports into the selected REST service while retaining tools
   await expect(page.getByLabel("导入原文", { exact: true })).toHaveValue("");
   await page.getByLabel("导入原文", { exact: true }).fill(JSON.stringify({ openapi: "3.1.0", servers: [{ url }], paths: { "/fresh": { get: {} } } }));
   await page.getByRole("button", { name: "解析预览", exact: true }).click();
-  await expect(page.getByRole("combobox", { name: "保存方式", exact: true })).toHaveValue("");
+  await expect(page.getByRole("combobox", { name: "保存方式", exact: true })).toContainText("新建服务（REST API 接入）");
 });

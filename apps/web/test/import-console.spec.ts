@@ -21,10 +21,11 @@ test("administrator reviews editable REST imports and confirms only supported op
   await page.getByLabel("导入命名空间", { exact: true }).fill("rest-browser");
   await page.getByLabel("导入后启用", { exact: true }).check();
   await page.getByLabel("选择 GET /read", { exact: true }).check();
+  await page.getByRole("button", { name: "编辑定义", exact: true }).click();
   await page.getByLabel("操作定义 GET /read", { exact: true }).fill(JSON.stringify({ name: "read-edited", method: "GET", path: "/read", parameters: [], example: {} }, null, 2));
   await page.screenshot({ path: testInfo.outputPath("rest-import-preview.png"), fullPage: true });
   await page.getByRole("button", { name: "确认导入", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("导入完成");
+  await expect(page.getByText(/导入完成/).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "Browser REST", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "试调用 rest-browser__read-edited", exact: true }).click();
   await page.getByRole("button", { name: "执行试调用", exact: true }).click();
