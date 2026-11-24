@@ -16,8 +16,21 @@ export function registerRoleRoutes(app: Express, database: Kysely<DatabaseSchema
       return;
     }
 
-    const roles = await database.selectFrom("roles").select(["id", "name", "isAdmin"]).orderBy("name").execute();
-    response.json({ roles: roles.map((role) => ({ ...role, isAdmin: Boolean(role.isAdmin) })) });
+    const [roles, userCounts, grantCounts] = await Promise.all([
+      database.selectFrom("roles").select(["id", "name", "isAdmin"]).orderBy("name").execute(),
+      database.selectFrom("user_roles").select(["roleId", (eb) => eb.fn.countAll<number>().as("count")]).groupBy("roleId").execute(),
+      database.selectFrom("role_resources").select(["roleId", (eb) => eb.fn.countAll<number>().as("count")]).groupBy("roleId").execute(),
+    ]);
+    const usersByRole = new Map(userCounts.map((row) => [row.roleId, Number(row.count)]));
+    const grantsByRole = new Map(grantCounts.map((row) => [row.roleId, Number(row.count)]));
+    response.json({
+      roles: roles.map((role) => ({
+        ...role,
+        isAdmin: Boolean(role.isAdmin),
+        userCount: usersByRole.get(role.id) ?? 0,
+        grantCount: grantsByRole.get(role.id) ?? 0,
+      })),
+    });
   });
 
   app.post("/api/admin/roles", async (request, response) => {

@@ -7,9 +7,17 @@ import { serviceMigration } from "./migrations/002-services.js";
 import { toolMigration } from "./migrations/003-tools.js";
 import { auditMigration } from "./migrations/004-audit.js";
 import { toolNameMigration } from "./migrations/005-tool-names.js";
+import { auditDurationMigration } from "./migrations/006-audit-duration.js";
 
 const migrationProvider: MigrationProvider = {
-  getMigrations: async () => ({ "001_initial": initialMigration, "002_services": serviceMigration, "003_tools": toolMigration, "004_audit": auditMigration, "005_tool_names": toolNameMigration }),
+  getMigrations: async () => ({
+    "001_initial": initialMigration,
+    "002_services": serviceMigration,
+    "003_tools": toolMigration,
+    "004_audit": auditMigration,
+    "005_tool_names": toolNameMigration,
+    "006_audit_duration": auditDurationMigration,
+  }),
 };
 
 export interface InitialAdminCredentials {

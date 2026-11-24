@@ -92,6 +92,7 @@ export interface AuditTable {
   toolName: string;
   createdAt: string;
   status: "running" | "succeeded" | "failed" | "unknown";
+  durationMs: number | null;
   clientName: string | null;
   clientVersion: string | null;
 }

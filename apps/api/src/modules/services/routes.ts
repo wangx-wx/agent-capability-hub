@@ -17,8 +17,12 @@ export function serviceQuery(database: Kysely<DatabaseSchema>) {
     .selectAll("services").select(["resources.name", "resources.description"]);
 }
 
-export function presentService(service: ServiceTable & { name: string; description: string }, connectionStatus = "disconnected") {
-  return { ...service, enabled: Boolean(service.enabled), headers: JSON.parse(service.headers), connectionStatus };
+export function presentService(
+  service: ServiceTable & { name: string; description: string },
+  connectionStatus = "disconnected",
+  toolCount = 0,
+) {
+  return { ...service, enabled: Boolean(service.enabled), headers: JSON.parse(service.headers), connectionStatus, toolCount };
 }
 
 export function parseService(body: Record<string, unknown>): ServiceTable & { name: string; description: string } {
@@ -70,12 +74,22 @@ export function registerServiceRoutes(app: Express, database: Kysely<DatabaseSch
     } catch (error) { response.json({ connectionStatus: sources.status(service), error: error instanceof Error ? error.message : "Connection failed" }); }
   });
   router.get("/", async (_request, response) => {
-    response.json({ services: (await serviceQuery(database).orderBy("resources.name").execute()).map((service) => presentService(service, sources.status(service))) });
+    const [services, counts] = await Promise.all([
+      serviceQuery(database).orderBy("resources.name").execute(),
+      database.selectFrom("tools").select(["serviceId", (eb) => eb.fn.countAll<number>().as("count")]).groupBy("serviceId").execute(),
+    ]);
+    const toolCounts = new Map(counts.map((row) => [row.serviceId, Number(row.count)]));
+    response.json({
+      services: services.map((service) => presentService(service, sources.status(service), toolCounts.get(service.id) ?? 0)),
+    });
   });
   router.get("/:id", async (request, response) => {
-    const service = await serviceQuery(database).where("services.id", "=", request.params.id).executeTakeFirst();
+    const [service, toolCountRow] = await Promise.all([
+      serviceQuery(database).where("services.id", "=", request.params.id).executeTakeFirst(),
+      database.selectFrom("tools").select((eb) => eb.fn.countAll<number>().as("count")).where("serviceId", "=", request.params.id).executeTakeFirst(),
+    ]);
     if (!service) { response.status(404).json({ error: "Service not found" }); return; }
-    response.json({ service: presentService(service, sources.status(service)) });
+    response.json({ service: presentService(service, sources.status(service), Number(toolCountRow?.count ?? 0)) });
   });
   router.post("/", async (request, response) => {
     let service: ReturnType<typeof parseService>;

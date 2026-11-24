@@ -32,7 +32,7 @@ export function registerServiceEditRoutes(router: Router, database: Kysely<Datab
       forgetSync(service.id);
       if (!service.enabled || old.url !== service.url || old.headers !== service.headers || old.transport !== service.transport || old.timeoutSeconds !== service.timeoutSeconds) await sources.drop(service.id);
       sources.watch(service);
-      response.json({ service: presentService(service, sources.status(service)) });
+      response.json({ service: presentService(service, sources.status(service), tools.length) });
     };
     if (route === "config-preview") router.post("/:id/config-preview", handle);
     else router.patch("/:id", handle);
