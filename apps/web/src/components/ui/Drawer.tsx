@@ -20,6 +20,7 @@ export interface DrawerProps {
   side?: "right" | "left";
   size?: DrawerSize;
   busy?: boolean;
+  preventClose?: boolean;
   headerExtra?: ReactNode;
   footer?: ReactNode;
   children: ReactNode;
@@ -35,6 +36,7 @@ export function Drawer({
   side = "right",
   size = "lg",
   busy = false,
+  preventClose = false,
   headerExtra,
   footer,
   children,
@@ -42,12 +44,13 @@ export function Drawer({
 }: DrawerProps) {
   const descId = useId();
   const isLeft = side === "left";
+  const locked = busy || preventClose;
 
   return (
     <DialogPrimitive.Root
       open={open}
       onOpenChange={(next) => {
-        if (busy && !next) return;
+        if (locked && !next) return;
         onOpenChange(next);
       }}
     >
@@ -56,10 +59,13 @@ export function Drawer({
         <DialogPrimitive.Content
           aria-describedby={description ? descId : undefined}
           onEscapeKeyDown={(event) => {
-            if (busy) event.preventDefault();
+            if (locked) event.preventDefault();
           }}
           onPointerDownOutside={(event) => {
-            if (busy) event.preventDefault();
+            if (locked) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (locked) event.preventDefault();
           }}
           className={cn(
             "fixed inset-y-0 z-40 flex flex-col bg-white border-[#E2E5EC] shadow-[var(--shadow-lg)] outline-none",
