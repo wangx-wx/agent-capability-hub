@@ -63,7 +63,7 @@ export function KeysPage({ user, ownerId, setError, onReveal }: KeysPageProps) {
       setName("");
       setExpiry("choose");
       setExpiresAt("");
-      onReveal({ title: `API Key：${result.key.name}`, value: result.key.value });
+      onReveal({ kind: "api-key", title: `API Key：${result.key.name}`, value: result.key.value });
       await load();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "创建 API Key 失败");
@@ -179,7 +179,7 @@ export function KeysPage({ user, ownerId, setError, onReveal }: KeysPageProps) {
                           type="button"
                           className="icon-button small-icon"
                           onClick={() =>
-                            onReveal({ title: `API Key：${key.name}`, value: key.value })
+                            onReveal({ kind: "api-key", title: `API Key：${key.name}`, value: key.value })
                           }
                           aria-label={`复制 ${key.name}`}
                           title="复制 Key"

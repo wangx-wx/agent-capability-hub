@@ -12,12 +12,15 @@ export interface User {
   active: boolean;
   isAdmin: boolean;
   roleIds: string[];
+  createdAt: string;
 }
 
 export interface Role {
   id: string;
   name: string;
   isAdmin: boolean;
+  userCount?: number;
+  grantCount?: number;
 }
 
 export interface Resource {
@@ -51,12 +54,32 @@ export interface Service {
   timeoutSeconds: number;
   enabled: boolean;
   connectionStatus: string;
+  toolCount?: number;
 }
 
 export const connectionKindLabels: Record<Service["kind"], string> = {
   mcp: "原生 MCP",
   rest: "REST API",
 };
+
+export interface RestParameter {
+  in: "path" | "query" | "header";
+  name: string;
+  schema: Record<string, unknown>;
+  required?: boolean;
+  style?: string;
+  explode?: boolean;
+}
+
+export interface RestMapping {
+  method: string;
+  path: string;
+  parameters: RestParameter[];
+  bodySchema?: Record<string, unknown> | boolean;
+  bodyRequired?: boolean;
+  bodyContentType?: string;
+  schemaDefs?: Record<string, unknown>;
+}
 
 export interface RegisteredTool {
   id: string;
@@ -66,10 +89,33 @@ export interface RegisteredTool {
   description?: string;
   inputSchema: Record<string, unknown>;
   example?: Record<string, unknown>;
-  rest?: Record<string, unknown>;
+  rest?: RestMapping;
+}
+
+export interface AuditRecord {
+  id: string;
+  userId: string;
+  username: string;
+  keyId: string | null;
+  serviceId: string | null;
+  serviceName: string | null;
+  toolId: string | null;
+  toolName: string;
+  createdAt: string;
+  status: "running" | "succeeded" | "failed" | "unknown";
+  durationMs: number | null;
+  clientName: string | null;
+  clientVersion: string | null;
+}
+
+export interface AuditResponse {
+  records: AuditRecord[];
+  total: number;
+  hasMore: boolean;
 }
 
 export interface SecretReveal {
+  kind: "password" | "api-key";
   title: string;
   value: string;
 }

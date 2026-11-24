@@ -1,5 +1,6 @@
+@import "./theme.css";
 @import "./tokens.css";
-@import "./base.css";
-@import "./layout.css";
-@import "./editorial.css";
-@import "./console.css";
+@import "./base.css" layer(components);
+@import "./layout.css" layer(components);
+@import "./editorial.css" layer(components);
+@import "./console.css" layer(components);

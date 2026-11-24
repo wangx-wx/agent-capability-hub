@@ -44,7 +44,7 @@ export function UsersPage({ setError, onReveal, onOpenKeys }: UsersPageProps) {
       });
       setUsername("");
       setSelectedRoles([]);
-      onReveal({ title: `用户 ${result.user.username} 的初始密码`, value: result.initialPassword });
+      onReveal({ kind: "password", title: `用户 ${result.user.username} 的初始密码`, value: result.initialPassword });
       await load();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "创建用户失败");
@@ -70,7 +70,7 @@ export function UsersPage({ setError, onReveal, onOpenKeys }: UsersPageProps) {
       const result = await api<{ newPassword: string }>(`/api/admin/users/${user.id}/password`, {
         method: "POST",
       });
-      onReveal({ title: `用户 ${user.username} 的新密码`, value: result.newPassword });
+      onReveal({ kind: "password", title: `用户 ${user.username} 的新密码`, value: result.newPassword });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "重置密码失败");
     }

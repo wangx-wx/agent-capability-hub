@@ -10,7 +10,6 @@ html {
   line-height: 1.5;
   color: var(--text-primary);
   background-color: var(--bg-canvas);
-  font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
@@ -137,14 +136,14 @@ pre,
 }
 
 .btn-primary {
-  background-color: var(--accent);
-  border-color: var(--accent);
+  background-color: var(--primary);
+  border-color: var(--primary);
   color: #FFFFFF;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--accent-hover);
-  border-color: var(--accent-hover);
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 .btn-secondary {

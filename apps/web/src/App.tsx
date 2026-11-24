@@ -1,7 +1,12 @@
-import { useEffect, useState } from "react";
-import { api } from "./lib/api";
-import { AppShell } from "./components/AppShell";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { api, setUnauthorizedHandler } from "./lib/api";
+import { useHashRoute } from "./lib/router";
+import { useHealth } from "./hooks/useHealth";
+import { Toaster, TooltipProvider } from "./components/ui";
+import { AppShell } from "./components/layout/AppShell";
 import { SecretDialog } from "./components/SecretDialog";
+import { PasswordModal } from "./components/domain/PasswordModal";
 import { LoginPage } from "./pages/LoginPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import { ServicesPage } from "./pages/ServicesPage";
@@ -9,15 +14,37 @@ import { AuditPage } from "./pages/AuditPage";
 import { UsersPage } from "./pages/UsersPage";
 import { RolesPage } from "./pages/RolesPage";
 import { KeysPage } from "./pages/KeysPage";
-import type { SecretReveal, SessionUser, ViewId } from "./types";
+import type { SecretReveal, SessionUser } from "./types";
 
 export default function App() {
   const [user, setUser] = useState<SessionUser | null>(null);
-  const [view, setView] = useState<ViewId>("overview");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reveal, setReveal] = useState<SecretReveal | null>(null);
-  const [keyOwner, setKeyOwner] = useState<string | null>(null);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+
+  const userRef = useRef<SessionUser | null>(null);
+  userRef.current = user;
+
+  const { route, navigate } = useHashRoute(Boolean(user?.isAdmin));
+  const { health } = useHealth(Boolean(user));
+
+  const resetSessionState = useCallback(() => {
+    setUser(null);
+    setReveal(null);
+    setError("");
+    setPasswordModalOpen(false);
+  }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      if (userRef.current) {
+        toast.error("登录状态已失效，请重新登录");
+      }
+      resetSessionState();
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [resetSessionState]);
 
   useEffect(() => {
     void api<{ user: SessionUser }>("/api/auth/me")
@@ -28,68 +55,84 @@ export default function App() {
 
   const logout = async () => {
     await api<void>("/api/auth/logout", { method: "POST" }).catch(() => undefined);
-    setUser(null);
-    setView("overview");
+    resetSessionState();
   };
 
-  if (loading) {
-    return <div className="screen-state">正在连接本地实例…</div>;
-  }
-
-  if (!user) {
-    return (
-      <LoginPage
-        onLogin={(loggedIn) => {
-          setUser(loggedIn);
-          setError("");
-        }}
-      />
-    );
-  }
-
   return (
-    <>
-      <AppShell
-        user={user}
-        view={view}
-        error={error}
-        onSelectView={(nextView) => {
-          if (nextView === "keys") setKeyOwner(user.id);
-          setView(nextView);
-          setError("");
-        }}
-        onClearError={() => setError("")}
-        onLogout={() => void logout()}
-      >
-        {view === "overview" && (
-          <OverviewPage user={user} onPasswordChanged={() => setUser(null)} />
-        )}
-        {view === "services" && user.isAdmin && <ServicesPage setError={setError} />}
-        {view === "audit" && user.isAdmin && <AuditPage />}
-        {view === "users" && user.isAdmin && (
-          <UsersPage
-            setError={setError}
-            onReveal={setReveal}
-            onOpenKeys={(userId) => {
-              setKeyOwner(userId);
-              setView("keys");
-            }}
-          />
-        )}
-        {view === "roles" && user.isAdmin && <RolesPage setError={setError} />}
-        {view === "keys" && (
-          <KeysPage
+    <TooltipProvider>
+      <Toaster />
+      {loading ? (
+        <div className="min-h-screen grid place-items-center bg-[#F5F6F8] text-[13px] text-[#4B5563]">
+          正在连接本地实例…
+        </div>
+      ) : !user ? (
+        <LoginPage
+          onLogin={(loggedIn) => {
+            setUser(loggedIn);
+            setError("");
+          }}
+        />
+      ) : (
+        <>
+          <AppShell
             user={user}
-            ownerId={keyOwner ?? user.id}
-            setError={setError}
-            onReveal={setReveal}
-          />
-        )}
-      </AppShell>
+            view={route.view}
+            health={health}
+            error={error}
+            onSelectView={(nextView) => {
+              navigate(nextView);
+              setError("");
+            }}
+            onClearError={() => setError("")}
+            onOpenPasswordModal={() => setPasswordModalOpen(true)}
+            onLogout={() => void logout()}
+          >
+            {route.view === "overview" && (
+              <OverviewPage
+                user={user}
+                onPasswordChanged={() => {
+                  resetSessionState();
+                  toast.success("密码已更新，请重新登录");
+                }}
+              />
+            )}
+            {route.view === "services" && user.isAdmin && <ServicesPage setError={setError} />}
+            {route.view === "audit" && user.isAdmin && <AuditPage />}
+            {route.view === "users" && user.isAdmin && (
+              <UsersPage
+                setError={setError}
+                onReveal={setReveal}
+                onOpenKeys={(userId) => navigate("keys", userId)}
+              />
+            )}
+            {route.view === "roles" && user.isAdmin && <RolesPage setError={setError} />}
+            {route.view === "keys" && (
+              <KeysPage
+                user={user}
+                ownerId={route.keyOwnerId ?? user.id}
+                setError={setError}
+                onReveal={setReveal}
+              />
+            )}
+          </AppShell>
 
-      {reveal && (
-        <SecretDialog title={reveal.title} value={reveal.value} onClose={() => setReveal(null)} />
+          <PasswordModal
+            open={passwordModalOpen}
+            onOpenChange={setPasswordModalOpen}
+            onSuccess={resetSessionState}
+          />
+
+          {reveal && (
+            <SecretDialog
+              open
+              kind={reveal.kind}
+              title={reveal.title}
+              value={reveal.value}
+              onClose={() => setReveal(null)}
+            />
+          )}
+        </>
       )}
-    </>
+    </TooltipProvider>
   );
 }
