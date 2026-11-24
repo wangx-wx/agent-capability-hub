@@ -55,7 +55,7 @@ export function ServiceDrawer({
       headerExtra={
         service &&
         status && (
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <Badge tone={status.tone} dot>
               {status.label}
             </Badge>

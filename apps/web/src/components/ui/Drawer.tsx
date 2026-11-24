@@ -75,8 +75,8 @@ export function Drawer({
             className,
           )}
         >
-          <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-[#E2E5EC] bg-white shrink-0">
-            <div className="min-w-0">
+          <div className="flex items-start justify-between gap-3 px-6 max-[640px]:px-4 py-4 border-b border-[#E2E5EC] bg-white shrink-0">
+            <div className="min-w-0 flex-1">
               <DialogPrimitive.Title className="text-[16px] font-semibold text-[#111827] leading-snug break-words">
                 {title}
               </DialogPrimitive.Title>
@@ -89,7 +89,7 @@ export function Drawer({
                 </DialogPrimitive.Description>
               )}
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
               {headerExtra}
               <DialogPrimitive.Close
                 type="button"
@@ -102,10 +102,12 @@ export function Drawer({
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+          <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-6 max-[640px]:px-4 py-5">
+            {children}
+          </div>
 
           {footer && (
-            <div className="flex items-center justify-end gap-2.5 px-6 py-3.5 border-t border-[#E2E5EC] bg-[#F5F6F8]/70 shrink-0">
+            <div className="flex items-center justify-end gap-2.5 px-6 max-[640px]:px-4 py-3.5 border-t border-[#E2E5EC] bg-[#F5F6F8]/70 shrink-0">
               {footer}
             </div>
           )}

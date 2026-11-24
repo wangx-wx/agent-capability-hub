@@ -55,14 +55,16 @@ function normalizeForUser(route: RouteState, isAdmin: boolean): RouteState {
  * Synchronizes view state with window.location.hash, enforces admin route
  * guards, resets scroll position on view change, and updates document.title.
  */
-export function useHashRoute(isAdmin: boolean) {
-  const [route, setRoute] = useState<RouteState>(() =>
-    normalizeForUser(parseHashRoute(window.location.hash), isAdmin),
-  );
+export function useHashRoute(isAdmin: boolean, guardActive = true) {
+  const [route, setRoute] = useState<RouteState>(() => parseHashRoute(window.location.hash));
 
   useEffect(() => {
     const sync = () => {
       const parsed = parseHashRoute(window.location.hash);
+      if (!guardActive) {
+        setRoute(parsed);
+        return;
+      }
       const next = normalizeForUser(parsed, isAdmin);
       const targetHash = buildHashRoute(next.view, next.keyOwnerId);
       if (window.location.hash !== targetHash) {
@@ -73,7 +75,7 @@ export function useHashRoute(isAdmin: boolean) {
     sync();
     window.addEventListener("hashchange", sync);
     return () => window.removeEventListener("hashchange", sync);
-  }, [isAdmin]);
+  }, [isAdmin, guardActive]);
 
   useEffect(() => {
     document.title = `${VIEW_TITLES[route.view]} · Agent 能力中台`;
@@ -84,10 +86,10 @@ export function useHashRoute(isAdmin: boolean) {
     (view: ViewId, keyOwnerId?: string) => {
       const next = normalizeForUser({ view, keyOwnerId }, isAdmin);
       const targetHash = buildHashRoute(next.view, next.keyOwnerId);
+      setRoute(next);
       if (window.location.hash !== targetHash) {
         window.location.hash = targetHash;
       } else {
-        setRoute(next);
         window.scrollTo(0, 0);
       }
     },

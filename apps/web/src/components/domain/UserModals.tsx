@@ -42,7 +42,7 @@ function RoleChecklist({
                 <span className="truncate font-medium">{role.name}</span>
               </span>
               {role.grantCount !== undefined && (
-                <span className="font-mono text-[11px] text-[#5B6270] shrink-0">
+                <span aria-hidden="true" className="font-mono text-[11px] text-[#5B6270] shrink-0">
                   {role.grantCount} 项权限
                 </span>
               )}

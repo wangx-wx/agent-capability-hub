@@ -26,7 +26,7 @@ export default function App() {
   const userRef = useRef<SessionUser | null>(null);
   userRef.current = user;
 
-  const { route, navigate } = useHashRoute(Boolean(user?.isAdmin));
+  const { route, navigate } = useHashRoute(Boolean(user?.isAdmin), !loading && Boolean(user));
   const { health, refreshing: healthRefreshing, refresh: refreshHealth } = useHealth(Boolean(user));
 
   const resetSessionState = useCallback(() => {

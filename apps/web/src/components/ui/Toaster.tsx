@@ -4,7 +4,7 @@ import { Toaster as SonnerToaster } from "sonner";
 export function Toaster() {
   return (
     <SonnerToaster
-      position="top-right"
+      position="bottom-right"
       visibleToasts={1}
       closeButton
       duration={3000}

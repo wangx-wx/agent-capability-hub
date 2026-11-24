@@ -152,7 +152,7 @@ export function ToolPanel({
 
             return (
               <div key={tool.id} className="p-4 flex flex-col gap-2.5">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col min-[520px]:flex-row min-[520px]:items-start min-[520px]:justify-between gap-3 min-[520px]:gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 min-w-0">
                       <strong className="font-mono text-[13px] font-semibold text-[#111827] break-all">

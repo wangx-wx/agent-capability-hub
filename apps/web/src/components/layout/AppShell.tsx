@@ -218,15 +218,16 @@ export function AppShell({
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="h-[52px] sticky top-0 z-30 flex items-center justify-between gap-4 px-8 max-[768px]:px-4 bg-[#F5F6F8]/85 backdrop-blur-md border-b border-[#E2E5EC]">
           <div className="flex items-center gap-2.5 min-w-0">
-            <IconButton
-              size="sm"
-              variant="secondary"
-              aria-label="打开导航"
-              className="hidden max-[768px]:inline-grid"
-              onClick={() => setMobileOpen(true)}
-            >
-              <Menu size={16} strokeWidth={1.75} />
-            </IconButton>
+            <span className="inline-flex min-[769px]:hidden">
+              <IconButton
+                size="sm"
+                variant="secondary"
+                aria-label="打开导航"
+                onClick={() => setMobileOpen(true)}
+              >
+                <Menu size={16} strokeWidth={1.75} />
+              </IconButton>
+            </span>
 
             <nav aria-label="面包屑" className="flex items-center gap-2 text-[13px] min-w-0">
               {trail.map((item, index) => {

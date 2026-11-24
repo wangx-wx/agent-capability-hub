@@ -143,7 +143,7 @@ export function ServicesPage({ setError: _setError }: { setError?: (value: strin
                   value={catalog.search}
                   onValueChange={catalog.setSearch}
                   placeholder="搜索名称、命名空间、URL 或说明…"
-                  className="w-72 max-[768px]:w-full"
+                  className="w-80 max-[768px]:w-full"
                 />
                 <SegmentedControl<KindFilter>
                   aria-label="按接入方式筛选"
