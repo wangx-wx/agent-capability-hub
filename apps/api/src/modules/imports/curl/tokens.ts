@@ -28,7 +28,6 @@ export function curlTokens(text: string) {
     }
     if (character === "'" || character === '"') { quote = character; active = true; continue; }
     if (";|&<>()".includes(character)) throw new Error("Only a single cURL command without shell operators is supported");
-    if (character === "\n" || character === "\r") throw new Error("Use a single cURL command or escaped line continuations");
     if (/\s/.test(character)) {
       if (active) tokens.push(token);
       token = ""; active = false;

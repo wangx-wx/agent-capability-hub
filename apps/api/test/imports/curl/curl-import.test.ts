@@ -33,3 +33,25 @@ it("previews cURL parameters and service credentials without publishing until ad
   expect(await client.callTool({ name: "imported__update", arguments: operation.definition.example })).toMatchObject({ content: [{ type: "text", text: '{ "accepted": true }' }] });
   expect(source.requests).toEqual([{ method: "POST", url: "/v1/users/42?limit=001", authorization: "Bearer imported-secret", tenant: "team", body: { active: false } }]);
 });
+
+it("parses headers from a multiline cURL command", async () => {
+  platform = await startPlatform();
+  const text = [
+    "curl --url 'https://eip.example/gw/lc/api/tc-db-dict/getCurrentUserDbDictList'",
+    "-H 'Accept: application/json, text/plain, /'",
+    "-H 'ram-system: system-test'",
+    "-H 'ram-token: token-test'",
+  ].join("\n");
+  const preview = (await platform.admin.post("/api/admin/imports/preview").send({ kind: "curl", text }).expect(200)).body.preview;
+  const operation = preview.groups[0].operations[0];
+  expect(operation.definition.parameters).toEqual([
+    { in: "header", name: "Accept", schema: { type: "string" } },
+    { in: "header", name: "ram-system", schema: { type: "string" } },
+    { in: "header", name: "ram-token", schema: { type: "string" } },
+  ]);
+  expect(operation.definition.example.headers).toEqual({
+    Accept: "application/json, text/plain, /",
+    "ram-system": "system-test",
+    "ram-token": "token-test",
+  });
+});
