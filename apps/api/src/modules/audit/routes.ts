@@ -11,8 +11,9 @@ function escapeLike(value: string): string {
   return value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
 }
 
-function filteredAuditQuery(database: Kysely<DatabaseSchema>, status?: AuditStatus, q?: string) {
+function filteredAuditQuery(database: Kysely<DatabaseSchema>, status?: AuditStatus, q?: string, userId?: string) {
   let query = database.selectFrom("audit");
+  if (userId) query = query.where("userId", "=", userId);
   if (status) {
     query = query.where("status", "=", status);
   }
@@ -34,8 +35,6 @@ export function registerAuditRoutes(app: Express, database: Kysely<DatabaseSchem
   app.get("/api/admin/audit", async (request, response) => {
     const actor = await resolveUser(request);
     if (!actor) { response.status(401).json({ error: "Authentication required" }); return; }
-    if (!actor.isAdmin) { response.status(403).json({ error: "Administrator access required" }); return; }
-
     const rawOffset = Number.parseInt(String(request.query.offset ?? "0"), 10);
     const offset = Number.isFinite(rawOffset) ? Math.max(0, rawOffset) : 0;
     const rawLimit = Number.parseInt(String(request.query.limit ?? "100"), 10);
@@ -49,7 +48,7 @@ export function registerAuditRoutes(app: Express, database: Kysely<DatabaseSchem
     const status = rawStatus ? (rawStatus as AuditStatus) : undefined;
     const q = typeof request.query.q === "string" ? request.query.q.trim() : "";
 
-    const filtered = filteredAuditQuery(database, status, q);
+    const filtered = filteredAuditQuery(database, status, q, actor.isAdmin ? undefined : actor.id);
     const [records, countRow] = await Promise.all([
       filtered.selectAll().orderBy("createdAt", "desc").orderBy("id").limit(limit).offset(offset).execute(),
       filtered.select((eb) => eb.fn.countAll<number>().as("total")).executeTakeFirstOrThrow(),

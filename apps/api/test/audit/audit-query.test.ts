@@ -178,6 +178,10 @@ it("filters audit records by status and q, clamps limit, and returns total and h
   const byClient = (await platform.admin.get("/api/admin/audit?q=codex").expect(200)).body;
   expect(byClient.total).toBe(2);
 
+  const aliceAudit = (await aliceBrowser.get("/api/admin/audit?limit=100&q=alpha").expect(200)).body;
+  expect(aliceAudit.total).toBe(2);
+  expect(aliceAudit.records.every((record: { userId: string }) => record.userId === created.user.id)).toBe(true);
+
   // Combined status + q
   const combined = (await platform.admin.get("/api/admin/audit?status=succeeded&q=codex").expect(200)).body;
   expect(combined.total).toBe(1);

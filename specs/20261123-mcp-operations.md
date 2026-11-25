@@ -4,6 +4,8 @@
 
 2026-11-23 更新：控制台改为统一「MCP 服务」管理，原生 MCP 与 REST API 是两种接入方式；下方操作路径已同步更新，设计依据见 [统一管理规格](20261123-unified-mcp-management.md)。
 
+2026-11-25 更新：除统一 `/mcp` 外，MCP 服务可通过 `/{namespace}/mcp` 独立接入；反向代理需将这类路径转发到 API。按服务接入时，管理员可见该服务全部工具，普通用户仍受角色工具授权限制；namespace 修改后旧路径失效。详细权限规则见 [MCP 路径接入规格](20261125-mcp-path-access.md)。
+
 ## 启动与部署
 
 要求 Node.js 24 LTS、pnpm 11。全部 SDK、测试工具与构建工具为项目依赖，不需要全局安装。
@@ -26,7 +28,7 @@ pnpm build
 pnpm --filter @ach/api start
 ```
 
-生产控制台静态文件位于 `apps/web/dist/`。部署者的 Web 服务应提供这些文件，并把 `/api`、`/mcp` 转发到 API，保持同源；`/mcp` 代理关闭响应缓冲，读超时应大于服务配置的工具超时。TLS、外部可达性和网络路由由部署环境提供。
+生产控制台静态文件位于 `apps/web/dist/`。部署者的 Web 服务应提供这些文件，并把 `/api`、`/mcp`、`/{namespace}/mcp` 转发到 API，保持同源；MCP 路径代理关闭响应缓冲，读超时应大于服务配置的工具超时。TLS、外部可达性和网络路由由部署环境提供。
 
 Nginx 配置片段（替换静态文件的绝对路径及部署监听配置）：
 
@@ -39,7 +41,7 @@ server {
         proxy_pass http://127.0.0.1:3100;
         proxy_set_header Host $host;
     }
-    location = /mcp {
+    location ~ ^/([^/]+/)?mcp$ {
         proxy_pass http://127.0.0.1:3100;
         proxy_set_header Host $host;
         proxy_buffering off;

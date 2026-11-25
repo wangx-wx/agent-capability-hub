@@ -26,7 +26,7 @@ const INITIAL_SYNC_MODAL: SyncModalState = {
 };
 
 /** Encapsulates service list, tool loading with AbortController, filters, and CRUD/sync actions. */
-export function useServicesCatalog() {
+export function useServicesCatalog(isAdmin = true) {
   const [services, setServices] = useState<Service[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [refreshingList, setRefreshingList] = useState(false);
@@ -53,7 +53,7 @@ export function useServicesCatalog() {
     listAbortRef.current = controller;
     setRefreshingList(true);
     try {
-      const result = await api<{ services: Service[] }>("/api/admin/services", {
+      const result = await api<{ services: Service[] }>(isAdmin ? "/api/admin/services" : "/api/services/catalog", {
         signal: controller.signal,
       });
       setServices(result.services);
@@ -70,7 +70,7 @@ export function useServicesCatalog() {
         setRefreshingList(false);
       }
     }
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     void loadServices();
@@ -89,7 +89,7 @@ export function useServicesCatalog() {
     setLoadingTools(true);
     try {
       const result = await api<{ tools: RegisteredTool[] }>(
-        `/api/admin/services/${serviceId}/tools`,
+        `${isAdmin ? "/api/admin" : "/api"}/services/${serviceId}/tools`,
         { signal: controller.signal },
       );
       setTools(result.tools);
@@ -101,7 +101,7 @@ export function useServicesCatalog() {
         setLoadingTools(false);
       }
     }
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     void loadToolsFor(selectedId);

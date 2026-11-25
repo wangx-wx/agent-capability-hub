@@ -104,8 +104,8 @@ export default function App() {
                 onNavigate={(nextView) => navigate(nextView)}
               />
             )}
-            {route.view === "services" && user.isAdmin && <ServicesPage />}
-            {route.view === "audit" && user.isAdmin && <AuditPage />}
+            {route.view === "services" && <ServicesPage isAdmin={user.isAdmin} />}
+            {route.view === "audit" && <AuditPage />}
             {route.view === "users" && user.isAdmin && (
               <UsersPage
                 currentUserId={user.id}

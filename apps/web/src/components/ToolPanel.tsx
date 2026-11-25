@@ -23,6 +23,7 @@ interface ToolPanelProps {
   loading?: boolean;
   onChanged: () => Promise<void>;
   onModalOpenChange?: (open: boolean) => void;
+  readOnly?: boolean;
 }
 
 const METHOD_TONE: Record<string, "info" | "ok" | "warn" | "err" | "neutral"> = {
@@ -40,6 +41,7 @@ export function ToolPanel({
   loading = false,
   onChanged,
   onModalOpenChange,
+  readOnly = false,
 }: ToolPanelProps) {
   const [search, setSearch] = useState("");
   const [expandedDesc, setExpandedDesc] = useState<Record<string, boolean>>({});
@@ -110,7 +112,7 @@ export function ToolPanel({
               className="w-56"
             />
           )}
-          {service.kind === "rest" && (
+          {!readOnly && service.kind === "rest" && (
             <Button
               variant="primary"
               onClick={() => setRestModal({ open: true, initial: null })}
@@ -196,7 +198,7 @@ export function ToolPanel({
                   </div>
 
                   <div className="shrink-0 flex items-center flex-nowrap gap-1.5">
-                    <Button
+                    {!readOnly && <Button
                       size="sm"
                       variant="secondary"
                       aria-label={`试调用 ${tool.name}`}
@@ -204,8 +206,8 @@ export function ToolPanel({
                     >
                       <Play size={13} strokeWidth={1.75} />
                       <span>试调用</span>
-                    </Button>
-                    {tool.rest && (
+                    </Button>}
+                    {!readOnly && tool.rest && (
                       <Button
                         size="sm"
                         variant="secondary"
@@ -216,7 +218,7 @@ export function ToolPanel({
                         <span>编辑</span>
                       </Button>
                     )}
-                    <Button
+                    {!readOnly && <Button
                       size="sm"
                       variant="ghost"
                       aria-label={`删除 ${tool.name}`}
@@ -225,7 +227,7 @@ export function ToolPanel({
                     >
                       <Trash2 size={13} strokeWidth={1.75} />
                       <span>删除</span>
-                    </Button>
+                    </Button>}
                   </div>
                 </div>
 
@@ -314,22 +316,22 @@ export function ToolPanel({
         </div>
       )}
 
-      <ToolTestModal
+      {!readOnly && <ToolTestModal
         open={Boolean(testTool)}
         serviceId={service.id}
         tool={testTool}
         onClose={() => setTestTool(null)}
-      />
+      />}
 
-      <RestToolModal
+      {!readOnly && <RestToolModal
         open={restModal.open}
         serviceId={service.id}
         initial={restModal.initial}
         onClose={() => setRestModal({ open: false, initial: null })}
         onSaved={onChanged}
-      />
+      />}
 
-      <ConfirmDialog
+      {!readOnly && <ConfirmDialog
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
@@ -345,7 +347,7 @@ export function ToolPanel({
         confirmLabel="确认删除"
         busy={busyDelete}
         onConfirm={confirmDelete}
-      />
+      />}
     </div>
   );
 }

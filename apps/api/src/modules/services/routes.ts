@@ -9,6 +9,7 @@ import { registerToolTestRoutes } from "../tools/test.js";
 import { registerServiceEditRoutes } from "./edit.js";
 import { registerRestToolRoutes } from "../rest/tools.js";
 import { registerToolEditRoutes } from "../tools/edit.js";
+import { canViewService, listVisibleTools, presentTool, visibleResourceIds } from "../tools/catalog.js";
 
 type ResolveUser = (request: Request) => Promise<{ id: string; isAdmin: boolean } | null>;
 
@@ -51,6 +52,32 @@ export function parseService(body: Record<string, unknown>): ServiceTable & { na
 }
 
 export function registerServiceRoutes(app: Express, database: Kysely<DatabaseSchema>, resolveUser: ResolveUser, sources: McpSources) {
+  app.get("/api/services/catalog", async (request, response) => {
+    const actor = await resolveUser(request);
+    if (!actor) { response.status(401).json({ error: "Authentication required" }); return; }
+    const services = await serviceQuery(database).where("services.kind", "=", "mcp").orderBy("resources.name").execute();
+    const authorized = actor.isAdmin ? services : await Promise.all(services.map(async (service) =>
+      await canViewService(database, service.id, { userId: actor.id, isAdmin: false }) ? service : undefined));
+    const allowed = authorized.filter((service): service is NonNullable<typeof service> => Boolean(service));
+    const allTools = await listVisibleTools(database, sources, { userId: actor.id, isAdmin: actor.isAdmin });
+    const counts = new Map<string, number>();
+    for (const tool of allTools) counts.set(tool.serviceId, (counts.get(tool.serviceId) ?? 0) + 1);
+    response.json({ services: allowed.map((service) => ({
+      ...presentService(service, sources.status(service), counts.get(service.id) ?? 0),
+      url: `/${service.namespace}/mcp`, headers: {},
+    })) });
+  });
+  app.get("/api/services/:id/tools", async (request, response) => {
+    const actor = await resolveUser(request);
+    if (!actor) { response.status(401).json({ error: "Authentication required" }); return; }
+    const service = await serviceQuery(database).where("services.id", "=", request.params.id).where("services.kind", "=", "mcp").executeTakeFirst();
+    if (!service || !await canViewService(database, service.id, { userId: actor.id, isAdmin: actor.isAdmin })) {
+      response.status(404).json({ error: "MCP service not found" }); return;
+    }
+    const tools = await listVisibleTools(database, sources, { userId: actor.id, isAdmin: actor.isAdmin }, service.id);
+    response.json({ tools: tools.map(presentTool) });
+  });
+
   const router = Router();
   router.use(async (request, response, next) => {
     const actor = await resolveUser(request);

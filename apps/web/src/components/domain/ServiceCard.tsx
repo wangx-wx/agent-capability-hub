@@ -45,6 +45,7 @@ export interface ServiceCardProps {
   onSyncTools: (service: Service) => void;
   onImportTools: (service: Service) => void;
   onRequestDelete: (service: Service) => void;
+  readOnly?: boolean;
 }
 
 /** 4-layer service grid card with kind-aware menu and propagation-safe Switch/actions. */
@@ -59,6 +60,7 @@ export function ServiceCard({
   onSyncTools,
   onImportTools,
   onRequestDelete,
+  readOnly = false,
 }: ServiceCardProps) {
   const status = serviceStatusMeta(service);
   const toolCount = service.toolCount ?? 0;
@@ -91,14 +93,14 @@ export function ServiceCard({
               {connectionKindLabels[service.kind]}
             </Badge>
           </div>
-          <div onClick={(event) => event.stopPropagation()} className="shrink-0">
+          {!readOnly && <div onClick={(event) => event.stopPropagation()} className="shrink-0">
             <Switch
               checked={service.enabled}
               disabled={toggling}
               aria-label={`切换 ${service.name} 启用状态`}
               onCheckedChange={(checked) => onToggleEnabled(service, checked)}
             />
-          </div>
+          </div>}
         </div>
 
         <div className="flex items-center gap-1.5 text-[12px] font-mono text-[#5B6270] min-w-0">
@@ -134,7 +136,7 @@ export function ServiceCard({
           <Button size="sm" variant="secondary" onClick={() => onOpenDetail(service)}>
             查看工具
           </Button>
-          <DropdownMenu>
+          {!readOnly && <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <IconButton size="sm" variant="ghost" aria-label={`${service.name} 更多操作`}>
                 <MoreHorizontal size={15} strokeWidth={1.75} />
@@ -168,7 +170,7 @@ export function ServiceCard({
                 <span>删除服务</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu>}
         </div>
       </div>
     </article>

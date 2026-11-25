@@ -19,6 +19,7 @@ export interface ServiceDrawerProps {
   onImportTools: (service: Service) => void;
   onRequestDelete: (service: Service) => void;
   onToolsChanged: () => Promise<void>;
+  readOnly?: boolean;
 }
 
 /** 760px right drawer displaying service metadata, quick actions, and its ToolPanel catalog. */
@@ -36,6 +37,7 @@ export function ServiceDrawer({
   onImportTools,
   onRequestDelete,
   onToolsChanged,
+  readOnly = false,
 }: ServiceDrawerProps) {
   const [toolModalOpen, setToolModalOpen] = useState(false);
   const status = service ? serviceStatusMeta(service) : null;
@@ -59,12 +61,12 @@ export function ServiceDrawer({
             <Badge tone={status.tone} dot>
               {status.label}
             </Badge>
-            <Switch
+            {!readOnly && <Switch
               checked={service.enabled}
               disabled={busyAction === "toggle"}
               aria-label="启用或停用当前服务"
               onCheckedChange={(checked) => onToggleEnabled(service, checked)}
-            />
+            />}
           </div>
         )
       }
@@ -93,12 +95,12 @@ export function ServiceDrawer({
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-sm)] bg-white border border-[#E2E5EC] px-3 py-2">
-              <code className="font-mono text-[12px] text-[#111827] break-all">{service.url}</code>
-              <CopyButton size="sm" iconOnly value={service.url} ariaLabel="复制服务地址" />
+              <code className="font-mono text-[12px] text-[#111827] break-all">{readOnly ? `${window.location.origin}${service.url}` : service.url}</code>
+              <CopyButton size="sm" iconOnly value={readOnly ? `${window.location.origin}${service.url}` : service.url} ariaLabel="复制服务地址" />
             </div>
 
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              {service.kind === "mcp" && (
+              {!readOnly && service.kind === "mcp" && (
                 <>
                   <Button
                     variant="primary"
@@ -121,26 +123,26 @@ export function ServiceDrawer({
                 </>
               )}
 
-              {service.kind === "rest" && (
+              {!readOnly && service.kind === "rest" && (
                 <Button variant="primary" onClick={() => onImportTools(service)}>
                   <FileInput size={14} strokeWidth={1.75} />
                   <span>导入工具</span>
                 </Button>
               )}
 
-              <Button variant="secondary" onClick={() => onEdit(service)}>
+              {!readOnly && <Button variant="secondary" onClick={() => onEdit(service)}>
                 <Pencil size={14} strokeWidth={1.75} />
                 <span>编辑服务</span>
-              </Button>
+              </Button>}
 
-              <Button
+              {!readOnly && <Button
                 variant="ghost"
                 className="text-[#B91C1C] hover:bg-[#FEF2F2] hover:text-[#B91C1C] ml-auto"
                 onClick={() => onRequestDelete(service)}
               >
                 <Trash2 size={14} strokeWidth={1.75} />
                 <span>删除服务</span>
-              </Button>
+              </Button>}
             </div>
           </div>
 
@@ -149,6 +151,7 @@ export function ServiceDrawer({
             service={service}
             tools={tools}
             loading={loadingTools}
+            readOnly={readOnly}
             onChanged={onToolsChanged}
             onModalOpenChange={setToolModalOpen}
           />

@@ -22,8 +22,9 @@ import { ServiceOnboardingDrawer } from "../components/domain/ServiceOnboardingD
 import { SyncPreviewModal } from "../components/domain/SyncPreviewModal";
 import type { Service } from "../types";
 
-export function ServicesPage({ setError: _setError }: { setError?: (value: string) => void }) {
-  const catalog = useServicesCatalog();
+export function ServicesPage({ isAdmin = true }: { isAdmin?: boolean }) {
+  const readOnly = !isAdmin;
+  const catalog = useServicesCatalog(isAdmin);
   const [onboarding, setOnboarding] = useState<{ open: boolean; sessionKey: number; target?: Service }>({
     open: false,
     sessionKey: 0,
@@ -67,7 +68,7 @@ export function ServicesPage({ setError: _setError }: { setError?: (value: strin
       <PageHeader
         title="MCP 服务"
         description="统一管理服务与工具，通过原生 MCP 或 REST API 接入，在角色与授权页面分配访问权限。"
-        actions={
+        actions={isAdmin ? (
           <>
             <Button
               variant="secondary"
@@ -87,7 +88,7 @@ export function ServicesPage({ setError: _setError }: { setError?: (value: strin
               <span>接入服务</span>
             </Button>
           </>
-        }
+        ) : undefined}
       />
 
       {importBanner && (
@@ -194,12 +195,12 @@ export function ServicesPage({ setError: _setError }: { setError?: (value: strin
               icon={<Server size={20} strokeWidth={1.75} />}
               title="尚未登记任何服务"
               description="接入原生 MCP 服务，或通过手工定义、OpenAPI、cURL 将 REST API 映射为 MCP 工具。"
-              action={
+              action={isAdmin ? (
                 <Button variant="primary" onClick={openNewOnboarding}>
                   <Plus size={14} strokeWidth={1.75} />
                   <span>接入第一个服务</span>
                 </Button>
-              }
+              ) : undefined}
             />
           ) : catalog.filteredServices.length === 0 ? (
             <EmptyState
@@ -242,6 +243,7 @@ export function ServicesPage({ setError: _setError }: { setError?: (value: strin
                     }))
                   }
                   onRequestDelete={(item) => setDeleteTarget(item)}
+                  readOnly={readOnly}
                 />
               ))}
             </div>
@@ -276,9 +278,10 @@ export function ServicesPage({ setError: _setError }: { setError?: (value: strin
             catalog.loadServices(catalog.selectedId),
           ]);
         }}
+        readOnly={readOnly}
       />
 
-      <ServiceEditorModal
+      {isAdmin && <ServiceEditorModal
         service={editingService}
         onClose={() => setEditingService(null)}
         onSaved={(saved) => {
@@ -286,9 +289,9 @@ export function ServicesPage({ setError: _setError }: { setError?: (value: strin
           toast.success(`已保存服务 ${saved.name}`);
           void catalog.loadServices(saved.id);
         }}
-      />
+      />}
 
-      <ServiceOnboardingDrawer
+      {isAdmin && <ServiceOnboardingDrawer
         open={onboarding.open}
         sessionKey={onboarding.sessionKey}
         target={onboarding.target}
@@ -308,9 +311,9 @@ export function ServicesPage({ setError: _setError }: { setError?: (value: strin
           }
           void Promise.all([catalog.loadServices(first.id), catalog.loadToolsFor(first.id)]);
         }}
-      />
+      />}
 
-      <SyncPreviewModal
+      {isAdmin && <SyncPreviewModal
         open={catalog.syncModal.open}
         preview={catalog.syncModal.preview}
         existingTools={catalog.tools}
@@ -320,9 +323,9 @@ export function ServicesPage({ setError: _setError }: { setError?: (value: strin
         onConfirm={() => void catalog.confirmSync()}
         onRedetect={() => void catalog.syncPreview(catalog.syncModal.serviceId)}
         onClose={catalog.closeSyncModal}
-      />
+      />}
 
-      <ConfirmDialog
+      {isAdmin && <ConfirmDialog
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
@@ -339,7 +342,7 @@ export function ServicesPage({ setError: _setError }: { setError?: (value: strin
         confirmLabel="确认删除"
         busy={busyDelete}
         onConfirm={confirmDeleteService}
-      />
+      />}
     </section>
   );
 }

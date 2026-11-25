@@ -6,7 +6,7 @@ export interface RouteState {
   keyOwnerId?: string;
 }
 
-const ADMIN_VIEWS = new Set<ViewId>(["services", "audit", "users", "roles"]);
+const ADMIN_VIEWS = new Set<ViewId>(["users", "roles"]);
 const ALL_VIEWS = new Set<ViewId>(["overview", "services", "audit", "users", "roles", "keys"]);
 
 export const VIEW_TITLES: Record<ViewId, string> = {

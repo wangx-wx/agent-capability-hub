@@ -184,6 +184,13 @@ export function AppShell({
             { id: "keys", label: "API Keys", icon: KeyRound },
           ],
         },
+        {
+          title: "能力接入",
+          items: [
+            { id: "services", label: "MCP 服务", icon: Server },
+            { id: "audit", label: "调用审计", icon: ScrollText },
+          ],
+        },
       ];
 
   const allItems = navGroups.flatMap((group) => group.items);

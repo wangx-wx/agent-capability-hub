@@ -36,13 +36,13 @@ export async function executeTool(database: Kysely<DatabaseSchema>, sources: Mcp
 }
 
 export async function executeFormalTool(database: Kysely<DatabaseSchema>, sources: McpSources,
-  actor: CallerContext, name: string, args: Record<string, unknown>, attempt: AuditAttempt | undefined, signal?: AbortSignal): Promise<CallToolResult> {
+  actor: CallerContext, name: string, args: Record<string, unknown>, attempt: AuditAttempt | undefined, signal?: AbortSignal, serviceId?: string): Promise<CallToolResult> {
   if (!attempt) return toolError("Audit unavailable; tool call was not sent");
-  const tool = (await toolQuery(database).execute()).find((row) => `${row.namespace}__${row.originalName}` === name);
+  const tool = (await toolQuery(database).execute()).find((row) => (!serviceId || row.serviceId === serviceId) && `${row.namespace}__${row.originalName}` === name);
 
   let result: CallToolResult;
   try {
-    const allowed = tool && (await listVisibleTools(database, sources, actor)).some((row) => row.id === tool.id);
+    const allowed = tool && (await listVisibleTools(database, sources, actor, serviceId)).some((row) => row.id === tool.id);
     result = allowed ? await executeTool(database, sources, tool.id, args, actor, signal) : toolError("Tool unavailable or access denied");
   } catch { result = toolError("Tool call could not be completed"); }
   await finishAudit(database, attempt, Boolean(result.isError));
