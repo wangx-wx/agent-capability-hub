@@ -7,6 +7,8 @@ import {
   Lock,
   LogOut,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   ScrollText,
   Server,
   Shield,
@@ -25,6 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   IconButton,
+  Tooltip,
   cn,
 } from "../ui";
 
@@ -61,11 +64,15 @@ function SidebarContent({
   navGroups,
   view,
   health,
+  collapsed = false,
+  onToggleCollapse,
   onSelect,
 }: {
   navGroups: NavGroup[];
   view: ViewId;
   health: HealthState;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
   onSelect: (id: ViewId) => void;
 }) {
   const dotClass =
@@ -83,47 +90,61 @@ function SidebarContent({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2.5 px-2 pb-4 border-b border-[#E2E5EC]">
+      <div className={cn("flex pb-4 border-b border-[#E2E5EC]", collapsed ? "flex-col items-center gap-2" : "items-center gap-2.5 px-2")}>
         <span
           aria-hidden="true"
           className="inline-grid place-items-center h-8 w-8 rounded-[var(--radius-sm)] bg-[#18181B] text-white shrink-0"
         >
           <Boxes size={18} strokeWidth={1.75} />
         </span>
-        <div className="min-w-0">
+        {!collapsed && <div className="min-w-0 flex-1">
           <div className="text-[14px] font-semibold tracking-tight text-[#111827] leading-tight">
             Agent Hub
           </div>
           <div className="text-[12px] text-[#5B6270] leading-tight">能力中台</div>
-        </div>
+        </div>}
+        {onToggleCollapse && (
+          <IconButton
+            size="sm"
+            variant="ghost"
+            aria-label={collapsed ? "展开侧栏" : "收起侧栏"}
+            aria-expanded={!collapsed}
+            onClick={onToggleCollapse}
+          >
+            {collapsed ? <PanelLeftOpen size={16} strokeWidth={1.75} /> : <PanelLeftClose size={16} strokeWidth={1.75} />}
+          </IconButton>
+        )}
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 flex flex-col gap-5" aria-label="主导航">
         {navGroups.map((group) => (
           <div key={group.title} className="flex flex-col gap-1">
-            <div className="px-2.5 pb-1 text-[12px] font-medium text-[#5B6270]">
+            {!collapsed && <div className="px-2.5 pb-1 text-[12px] font-medium text-[#5B6270]">
               {group.title}
-            </div>
+            </div>}
             <div className="flex flex-col gap-0.5">
               {group.items.map(({ id, label, icon: Icon }) => {
                 const active = view === id;
                 return (
-                  <button
-                    key={id}
-                    type="button"
-                    aria-current={active ? "page" : undefined}
-                    onClick={() => onSelect(id)}
-                    className={cn(
-                      "w-full h-9 px-2.5 flex items-center gap-2.5 rounded-[var(--radius-sm)] text-[13px] font-medium text-left cursor-pointer",
-                      "transition-[background-color,color] duration-150",
-                      active
-                        ? "bg-[#EFF6FF] text-[#1D4ED8]"
-                        : "text-[#4B5563] hover:bg-[#EEF0F4] hover:text-[#111827]",
-                    )}
-                  >
-                    <Icon size={16} strokeWidth={1.75} className="shrink-0" />
-                    <span className="truncate">{label}</span>
-                  </button>
+                  <Tooltip key={id} content={label}>
+                    <button
+                      type="button"
+                      aria-label={label}
+                      aria-current={active ? "page" : undefined}
+                      onClick={() => onSelect(id)}
+                      className={cn(
+                        "w-full h-9 flex items-center rounded-[var(--radius-sm)] text-[13px] font-medium text-left cursor-pointer",
+                        collapsed ? "justify-center px-0" : "gap-2.5 px-2.5",
+                        "transition-[background-color,color] duration-150",
+                        active
+                          ? "bg-[#EFF6FF] text-[#1D4ED8]"
+                          : "text-[#4B5563] hover:bg-[#EEF0F4] hover:text-[#111827]",
+                      )}
+                    >
+                      <Icon size={16} strokeWidth={1.75} className="shrink-0" />
+                      {!collapsed && <span className="truncate">{label}</span>}
+                    </button>
+                  </Tooltip>
                 );
               })}
             </div>
@@ -131,9 +152,9 @@ function SidebarContent({
         ))}
       </nav>
 
-      <div className="pt-3 px-2.5 border-t border-[#E2E5EC] flex items-center gap-2 text-[12px] text-[#4B5563]">
+      <div className={cn("pt-3 border-t border-[#E2E5EC] flex items-center text-[12px] text-[#4B5563]", collapsed ? "justify-center" : "px-2.5 gap-2")}>
         <span aria-hidden="true" className={cn("h-2 w-2 rounded-full shrink-0", dotClass)} />
-        <span className="truncate">{healthLabel}</span>
+        {!collapsed && <span className="truncate">{healthLabel}</span>}
       </div>
     </div>
   );
@@ -153,6 +174,11 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => window.localStorage.getItem("ach_sidebar_collapsed") === "true");
+  const toggleSidebar = () => setSidebarCollapsed((current) => {
+    window.localStorage.setItem("ach_sidebar_collapsed", String(!current));
+    return !current;
+  });
 
   const navGroups: NavGroup[] = user.isAdmin
     ? [
@@ -207,8 +233,8 @@ export function AppShell({
 
   return (
     <div className="min-h-screen flex bg-[#F5F6F8] text-[#111827]">
-      <aside className="hidden min-[769px]:flex flex-col w-[232px] shrink-0 sticky top-0 h-screen bg-white border-r border-[#E2E5EC] px-3.5 py-4">
-        <SidebarContent navGroups={navGroups} view={view} health={health} onSelect={handleSelect} />
+      <aside className={cn("hidden min-[769px]:flex flex-col shrink-0 sticky top-0 h-screen bg-white border-r border-[#E2E5EC] px-3.5 py-4 transition-[width] duration-200", sidebarCollapsed ? "w-[72px]" : "w-[232px]")}>
+        <SidebarContent navGroups={navGroups} view={view} health={health} collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar} onSelect={handleSelect} />
       </aside>
 
       <Drawer
