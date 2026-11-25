@@ -21,7 +21,7 @@ test("administrator can collapse and expand the desktop sidebar", async ({ page 
   await expect(sidebar).toHaveCSS("width", "72px");
   const favicon = await page.request.get("/favicon.svg");
   expect(favicon.ok()).toBe(true);
-  expect(await favicon.text()).toContain("<svg");
+  expect(await favicon.text()).toContain("M2.97 12.92");
   await page.getByRole("button", { name: "展开侧栏", exact: true }).click();
   await expect(sidebar).toHaveCSS("width", "232px");
 });
