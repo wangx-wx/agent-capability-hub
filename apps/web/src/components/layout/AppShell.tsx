@@ -103,17 +103,6 @@ function SidebarContent({
           </div>
           <div className="text-[12px] text-[#5B6270] leading-tight">能力中台</div>
         </div>}
-        {onToggleCollapse && (
-          <IconButton
-            size="sm"
-            variant="ghost"
-            aria-label={collapsed ? "展开侧栏" : "收起侧栏"}
-            aria-expanded={!collapsed}
-            onClick={onToggleCollapse}
-          >
-            {collapsed ? <PanelLeftOpen size={16} strokeWidth={1.75} /> : <PanelLeftClose size={16} strokeWidth={1.75} />}
-          </IconButton>
-        )}
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 flex flex-col gap-5" aria-label="主导航">
@@ -152,9 +141,25 @@ function SidebarContent({
         ))}
       </nav>
 
-      <div className={cn("pt-3 border-t border-[#E2E5EC] flex items-center text-[12px] text-[#4B5563]", collapsed ? "justify-center" : "px-2.5 gap-2")}>
-        <span aria-hidden="true" className={cn("h-2 w-2 rounded-full shrink-0", dotClass)} />
-        {!collapsed && <span className="truncate">{healthLabel}</span>}
+      <div className={cn(
+        "pt-3 border-t border-[#E2E5EC] flex text-[12px] text-[#4B5563]",
+        collapsed ? "flex-col items-center gap-2" : "items-center justify-between gap-2 px-2.5",
+      )}>
+        <div className={cn("flex items-center", collapsed ? "justify-center" : "min-w-0 gap-2")}>
+          <span aria-hidden="true" className={cn("h-2 w-2 rounded-full shrink-0", dotClass)} />
+          {!collapsed && <span className="truncate">{healthLabel}</span>}
+        </div>
+        {onToggleCollapse && (
+          <IconButton
+            size="sm"
+            variant="ghost"
+            aria-label={collapsed ? "展开侧栏" : "收起侧栏"}
+            aria-expanded={!collapsed}
+            onClick={onToggleCollapse}
+          >
+            {collapsed ? <PanelLeftOpen size={16} strokeWidth={1.75} /> : <PanelLeftClose size={16} strokeWidth={1.75} />}
+          </IconButton>
+        )}
       </div>
     </div>
   );

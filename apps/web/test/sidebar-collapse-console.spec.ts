@@ -8,6 +8,9 @@ test("administrator can collapse and expand the desktop sidebar", async ({ page 
 
   const sidebar = page.locator("aside");
   await expect(sidebar).toHaveCSS("width", "232px");
+  await expect(sidebar.getByRole("button", { name: "收起侧栏", exact: true })).toBeVisible();
+  const footer = sidebar.locator(".border-t").last();
+  await expect(footer.getByRole("button", { name: "收起侧栏", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "收起侧栏", exact: true }).click();
   await expect(sidebar).toHaveCSS("width", "72px");
   await expect(page.getByRole("button", { name: "收起侧栏", exact: true })).toHaveCount(0);
@@ -16,6 +19,9 @@ test("administrator can collapse and expand the desktop sidebar", async ({ page 
   await expect(page.getByRole("tooltip")).toHaveText("MCP 服务");
   await page.reload();
   await expect(sidebar).toHaveCSS("width", "72px");
+  const favicon = await page.request.get("/favicon.svg");
+  expect(favicon.ok()).toBe(true);
+  expect(await favicon.text()).toContain("<svg");
   await page.getByRole("button", { name: "展开侧栏", exact: true }).click();
   await expect(sidebar).toHaveCSS("width", "232px");
 });
