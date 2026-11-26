@@ -66,3 +66,71 @@ it("keeps personal audit queries private and treats text wildcards literally", a
     expect(result.records.map((row: { id: string }) => row.id)).toEqual(["literal"]);
   }
 });
+
+it("summarizes all matching audit records regardless of pagination and fills empty hourly buckets", async () => {
+  const { admin } = await auditFixture();
+  const result = (await admin.get("/api/admin/audit/stats").query({
+    from: "2026-11-26T08:00:00+08:00", to: "2026-11-26T14:00:00+08:00", limit: 1, offset: 100,
+  }).expect(200)).body;
+  expect(result.summary).toEqual({ total: 5, succeeded: 2, failed: 1, running: 1, unknown: 1, successRate: 2 / 3, averageDurationMs: 200 });
+  expect(result.interval).toBe("hour");
+  expect(result.trend).toEqual([
+    { time: "2026-11-26T08:00:00+08:00", total: 1, succeeded: 1, failed: 0 },
+    { time: "2026-11-26T09:00:00+08:00", total: 1, succeeded: 0, failed: 1 },
+    { time: "2026-11-26T10:00:00+08:00", total: 1, succeeded: 1, failed: 0 },
+    { time: "2026-11-26T11:00:00+08:00", total: 1, succeeded: 0, failed: 0 },
+    { time: "2026-11-26T12:00:00+08:00", total: 1, succeeded: 0, failed: 0 },
+    { time: "2026-11-26T13:00:00+08:00", total: 0, succeeded: 0, failed: 0 },
+  ]);
+});
+
+it("shares filters and personal access rules between audit statistics and records", async () => {
+  const { admin, alice } = await auditFixture();
+  const own = (await alice.get("/api/admin/audit/stats").query({ userId: "ignored" }).expect(200)).body;
+  expect(own.summary).toEqual({ total: 1, succeeded: 1, failed: 0, running: 0, unknown: 0, successRate: 1, averageDurationMs: 200 });
+  expect(own.trend).toEqual([{ time: "2026-11-26T10:00:00+08:00", total: 1, succeeded: 1, failed: 0 }]);
+  const query = { username: "root", serviceName: "Alpha", toolName: "echo", clientName: "Codex", q: "alpha", status: "succeeded", from: "2026-11-26T00:00:00Z", to: "2026-11-26T04:00:00Z" };
+  const filtered = (await admin.get("/api/admin/audit/stats").query(query).expect(200)).body;
+  expect(filtered.summary).toMatchObject({ total: 1, succeeded: 1, successRate: 1, averageDurationMs: 100 });
+  expect((await alice.get("/api/admin/audit/stats").query(query).expect(200)).body.summary.total).toBe(0);
+  for (const endpoint of ["/api/admin/audit", "/api/admin/audit/stats"]) {
+    await request(platform!.app).get(endpoint).expect(401);
+    await admin.get(endpoint).query({ from: "2026-02-30T00:00:00Z" }).expect(400);
+    await admin.get(endpoint).query({ status: "invalid" }).expect(400);
+    await admin.get(endpoint).query({ username: ["root", "alice"] }).expect(400);
+  }
+});
+
+it("uses Beijing calendar days and months for longer audit ranges", async () => {
+  const { admin } = await auditFixture();
+  const daily = (await admin.get("/api/admin/audit/stats").query({ from: "2026-11-26T00:00:00+08:00", to: "2026-11-30T00:00:00+08:00" }).expect(200)).body;
+  expect(daily.interval).toBe("day");
+  expect(daily.trend).toEqual([
+    { time: "2026-11-26T00:00:00+08:00", total: 5, succeeded: 2, failed: 1 },
+    { time: "2026-11-27T00:00:00+08:00", total: 0, succeeded: 0, failed: 0 },
+    { time: "2026-11-28T00:00:00+08:00", total: 0, succeeded: 0, failed: 0 },
+    { time: "2026-11-29T00:00:00+08:00", total: 0, succeeded: 0, failed: 0 },
+  ]);
+  const monthly = (await admin.get("/api/admin/audit/stats").query({ from: "2026-11-01T00:00:00+08:00", to: "2027-03-01T00:00:00+08:00" }).expect(200)).body;
+  expect(monthly.interval).toBe("month");
+  expect(monthly.trend).toEqual([
+    { time: "2026-11-01T00:00:00+08:00", total: 5, succeeded: 2, failed: 1 },
+    { time: "2026-12-01T00:00:00+08:00", total: 0, succeeded: 0, failed: 0 },
+    { time: "2027-01-01T00:00:00+08:00", total: 0, succeeded: 0, failed: 0 },
+    { time: "2027-02-01T00:00:00+08:00", total: 0, succeeded: 0, failed: 0 },
+  ]);
+});
+
+it("returns null metrics without finished samples and zero-filled or empty trends without records", async () => {
+  const { admin } = await auditFixture();
+  const unfinished = (await admin.get("/api/admin/audit/stats").query({ status: "running" }).expect(200)).body;
+  expect(unfinished.summary).toMatchObject({ total: 1, running: 1, successRate: null, averageDurationMs: null });
+  const empty = (await admin.get("/api/admin/audit/stats").query({ q: "missing" }).expect(200)).body;
+  expect(empty.summary).toEqual({ total: 0, succeeded: 0, failed: 0, running: 0, unknown: 0, successRate: null, averageDurationMs: null });
+  expect(empty.trend).toEqual([]);
+  const bounded = (await admin.get("/api/admin/audit/stats").query({ q: "missing", from: "2026-11-26T08:00:00+08:00", to: "2026-11-26T10:00:00+08:00" }).expect(200)).body;
+  expect(bounded.trend).toEqual([
+    { time: "2026-11-26T08:00:00+08:00", total: 0, succeeded: 0, failed: 0 },
+    { time: "2026-11-26T09:00:00+08:00", total: 0, succeeded: 0, failed: 0 },
+  ]);
+});

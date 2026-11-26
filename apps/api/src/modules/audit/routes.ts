@@ -2,10 +2,20 @@ import type { Express, Request } from "express";
 import type { Kysely } from "kysely";
 import type { DatabaseSchema } from "../../database/schema.js";
 import { filteredAuditQuery, parseAuditFilters } from "./query.js";
+import { auditStats } from "./stats.js";
 
 type ResolveUser = (request: Request) => Promise<{ id: string; isAdmin: boolean } | null>;
 
 export function registerAuditRoutes(app: Express, database: Kysely<DatabaseSchema>, resolveUser: ResolveUser) {
+  app.get("/api/admin/audit/stats", async (request, response) => {
+    const actor = await resolveUser(request);
+    if (!actor) { response.status(401).json({ error: "Authentication required" }); return; }
+    let filters;
+    try { filters = parseAuditFilters(request.query); }
+    catch (reason) { response.status(400).json({ error: (reason as Error).message }); return; }
+    response.json(await auditStats(database, filters, actor.isAdmin ? undefined : actor.id));
+  });
+
   app.get("/api/admin/audit", async (request, response) => {
     const actor = await resolveUser(request);
     if (!actor) { response.status(401).json({ error: "Authentication required" }); return; }
