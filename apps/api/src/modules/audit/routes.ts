@@ -1,35 +1,9 @@
 import type { Express, Request } from "express";
-import { sql, type Kysely } from "kysely";
-import type { AuditTable, DatabaseSchema } from "../../database/schema.js";
+import type { Kysely } from "kysely";
+import type { DatabaseSchema } from "../../database/schema.js";
+import { filteredAuditQuery, parseAuditFilters } from "./query.js";
 
 type ResolveUser = (request: Request) => Promise<{ id: string; isAdmin: boolean } | null>;
-type AuditStatus = AuditTable["status"];
-
-const VALID_STATUSES = new Set<AuditStatus>(["running", "succeeded", "failed", "unknown"]);
-
-function escapeLike(value: string): string {
-  return value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
-}
-
-function filteredAuditQuery(database: Kysely<DatabaseSchema>, status?: AuditStatus, q?: string, userId?: string) {
-  let query = database.selectFrom("audit");
-  if (userId) query = query.where("userId", "=", userId);
-  if (status) {
-    query = query.where("status", "=", status);
-  }
-  if (q) {
-    const pattern = `%${escapeLike(q.toLowerCase())}%`;
-    query = query.where((eb) =>
-      eb.or([
-        sql<boolean>`LOWER(${eb.ref("username")}) LIKE ${pattern} ESCAPE '\\'`,
-        sql<boolean>`LOWER(COALESCE(${eb.ref("serviceName")}, '')) LIKE ${pattern} ESCAPE '\\'`,
-        sql<boolean>`LOWER(${eb.ref("toolName")}) LIKE ${pattern} ESCAPE '\\'`,
-        sql<boolean>`LOWER(COALESCE(${eb.ref("clientName")}, '')) LIKE ${pattern} ESCAPE '\\'`,
-      ]),
-    );
-  }
-  return query;
-}
 
 export function registerAuditRoutes(app: Express, database: Kysely<DatabaseSchema>, resolveUser: ResolveUser) {
   app.get("/api/admin/audit", async (request, response) => {
@@ -40,15 +14,10 @@ export function registerAuditRoutes(app: Express, database: Kysely<DatabaseSchem
     const rawLimit = Number.parseInt(String(request.query.limit ?? "100"), 10);
     const limit = Number.isFinite(rawLimit) ? Math.min(100, Math.max(1, rawLimit)) : 100;
 
-    const rawStatus = typeof request.query.status === "string" ? request.query.status.trim() : "";
-    if (rawStatus && !VALID_STATUSES.has(rawStatus as AuditStatus)) {
-      response.status(400).json({ error: "Invalid audit status" });
-      return;
-    }
-    const status = rawStatus ? (rawStatus as AuditStatus) : undefined;
-    const q = typeof request.query.q === "string" ? request.query.q.trim() : "";
-
-    const filtered = filteredAuditQuery(database, status, q, actor.isAdmin ? undefined : actor.id);
+    let filters;
+    try { filters = parseAuditFilters(request.query); }
+    catch (reason) { response.status(400).json({ error: (reason as Error).message }); return; }
+    const filtered = filteredAuditQuery(database, filters, actor.isAdmin ? undefined : actor.id);
     const [records, countRow] = await Promise.all([
       filtered.selectAll().orderBy("createdAt", "desc").orderBy("id").limit(limit).offset(offset).execute(),
       filtered.select((eb) => eb.fn.countAll<number>().as("total")).executeTakeFirstOrThrow(),
