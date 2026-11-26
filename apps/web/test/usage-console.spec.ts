@@ -63,6 +63,8 @@ test("role grants, user keys, formal calls and private usage statistics form a c
   await page.getByRole("dialog", { name: "User Tools" }).getByRole("button", { name: "关闭", exact: true }).click();
   await page.getByRole("button", { name: "调用审计", exact: true }).click();
   await expect(page.getByRole("cell", { name: /usage__echo/ })).toBeVisible();
+  await expect(page.getByTestId("audit-total")).toHaveText("2");
+  await expect(page.getByTestId("audit-success-rate")).toHaveText("50.0%");
   await page.getByRole("button", { name: "账号菜单", exact: true }).click();
   await page.getByRole("menuitem", { name: "退出", exact: true }).click();
   await expect(page.getByRole("heading", { name: "登录控制台" })).toBeVisible();

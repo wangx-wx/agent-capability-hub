@@ -69,6 +69,8 @@ const EXACT_ERROR_MAP: Record<string, string> = {
   "Invalid request body": "请求参数格式不正确",
   "Request could not be completed": "请求处理失败，请稍后重试",
   "Invalid audit status": "无效的审计状态筛选条件",
+  "Invalid audit time range": "审计时间范围无效，请检查开始和结束时间",
+  "Invalid audit query parameter": "无效的审计查询条件",
 };
 
 const PATTERN_ERROR_MAP: Array<[RegExp, string]> = [

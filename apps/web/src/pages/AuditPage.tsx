@@ -10,6 +10,8 @@ import {
 } from "../lib/api";
 import { PageHeader } from "../components/layout/PageHeader";
 import { FilterToolbar } from "../components/layout/FilterToolbar";
+import { AuditAnalytics } from "../components/domain/AuditAnalytics";
+import { AuditQueryForm, auditQueryParams, DEFAULT_AUDIT_QUERY, type AuditQuery } from "../components/domain/AuditQueryForm";
 import {
   Badge,
   Button,
@@ -21,7 +23,7 @@ import {
   Tooltip,
   cn,
 } from "../components/ui";
-import type { AuditRecord, AuditResponse } from "../types";
+import type { AuditRecord, AuditResponse, AuditStats } from "../types";
 
 const ALL_STATUS = "__all__";
 const STATUS_META: Record<
@@ -38,6 +40,8 @@ export function AuditPage() {
   const [records, setRecords] = useState<AuditRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [stats, setStats] = useState<AuditStats | null>(null);
+  const [queryFilters, setQueryFilters] = useState(DEFAULT_AUDIT_QUERY);
 
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState("100");
@@ -71,18 +75,21 @@ export function AuditPage() {
     abortRef.current = controller;
     setRefreshing(true);
 
-    const params = new URLSearchParams({
-      offset: String(targetOffset),
-      limit,
-    });
+    const params = auditQueryParams(queryFilters);
     if (statusFilter !== ALL_STATUS) params.set("status", statusFilter);
     if (debouncedQuery) params.set("q", debouncedQuery);
+    const statsParams = params.toString();
+    params.set("offset", String(targetOffset));
+    params.set("limit", limit);
 
     try {
-      const result = await api<AuditResponse>(`/api/admin/audit?${params.toString()}`, {
-        signal: controller.signal,
-      });
+      const [result, statistics] = await Promise.all([
+        api<AuditResponse>(`/api/admin/audit?${params.toString()}`, { signal: controller.signal }),
+        api<AuditStats>(`/api/admin/audit/stats?${statsParams}`, { signal: controller.signal }),
+      ]);
+      if (controller.signal.aborted) return;
       setRecords(result.records);
+      setStats(statistics);
       setTotal(result.total);
       setHasMore(result.hasMore);
       lastGoodOffsetRef.current = targetOffset;
@@ -101,7 +108,7 @@ export function AuditPage() {
         setRefreshing(false);
       }
     }
-  }, [limit, statusFilter, debouncedQuery]);
+  }, [limit, statusFilter, debouncedQuery, queryFilters]);
 
   useEffect(() => {
     void fetchAudit(offset, false);
@@ -117,8 +124,15 @@ export function AuditPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const applyQuery = (query: AuditQuery, reset = false) => {
+    setQueryFilters({ ...query });
+    setOffset(0);
+    lastGoodOffsetRef.current = 0;
+    if (reset) { setStatusFilter(ALL_STATUS); setSearchInput(""); setDebouncedQuery(""); }
+  };
+
   return (
-    <section className="flex flex-col">
+    <section className="flex flex-col min-w-0" aria-busy={refreshing}>
       <PageHeader
         title="调用审计"
         description="保留每次正式工具调用的用户、服务、工具名称、耗时与结果状态；管理员控制台试调用不写入审计。"
@@ -134,6 +148,8 @@ export function AuditPage() {
           </Button>
         }
       />
+
+      <AuditQueryForm onApply={applyQuery} busy={refreshing} />
 
       <FilterToolbar
         left={
@@ -193,6 +209,8 @@ export function AuditPage() {
         </div>
       )}
 
+      {!loading && stats && <AuditAnalytics stats={stats} />}
+
       {loading ? (
         <div className="flex flex-col gap-2.5">
           <Skeleton className="h-12 w-full" />
@@ -202,7 +220,7 @@ export function AuditPage() {
       ) : (
         <div className="rounded-[var(--radius-md)] border border-[#E2E5EC] bg-white shadow-[var(--shadow-sm)] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table aria-label="审计记录" className="w-full text-left border-collapse">
               <thead className="bg-[#EEF0F4] border-b border-[#E2E5EC]">
                 <tr className="text-[12px] font-medium text-[#4B5563]">
                   <th className="px-4 py-2.5 whitespace-nowrap">时间</th>

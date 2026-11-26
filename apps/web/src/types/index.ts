@@ -114,6 +114,20 @@ export interface AuditResponse {
   hasMore: boolean;
 }
 
+export interface AuditStats {
+  summary: {
+    total: number;
+    succeeded: number;
+    failed: number;
+    running: number;
+    unknown: number;
+    successRate: number | null;
+    averageDurationMs: number | null;
+  };
+  interval: "hour" | "day" | "month";
+  trend: Array<{ time: string; total: number; succeeded: number; failed: number }>;
+}
+
 export interface SecretReveal {
   kind: "password" | "api-key";
   title: string;
