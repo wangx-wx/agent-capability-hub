@@ -22,7 +22,7 @@
 
 1. **MCP 网关**：Agent/IDE 客户端通过 Streamable HTTP 接入。平台连接已有的 Streamable HTTP 或旧版 SSE MCP 下游，并把获准的工具聚合给调用者。
 2. **REST 转 MCP**：管理员可从 OpenAPI JSON、OpenAPI YAML、cURL 导入 REST 操作，也可手动定义接口。登记后的 REST 操作映射为 MCP 工具。下游认证首期只支持无鉴权或服务级静态 HTTP 请求头。
-3. **Skills 广场**：无需登录即可浏览。管理员配置希望展示的 GitHub 插件/Skill 来源；平台解析并展示可用信息，但不托管 Skill 文件、不提供文件下载。用户复制安装命令，在自己的 Agent 环境中通过 `npx skills@latest` 或 Claude 插件安装方式从来源仓库安装。
+3. **Skills 广场**：无需登录即可浏览。管理员配置希望展示的 GitHub 插件/Skill 来源；平台按 [GitHub 来源解析规格](../20261127-skills-github-discovery.md) 解析并展示可安装 Skills，但不 clone 仓库、不托管或下载 Skill 文件。用户复制标准 `npx skills@latest add` 命令，在自己的 Agent 环境中从来源仓库安装。
 
 已认证的用户工作台与公开 Skills 广场是两个独立入口。用户工作台使用账号密码登录；API Key 只用于 MCP Bearer 鉴权。Skills 分为公开条目和仅登录用户可见的特殊条目，特殊条目可由角色控制可见性。
 
@@ -56,7 +56,7 @@
 26. 作为 Skills 使用者，我希望无需登录即可浏览公开 Skills 目录，以便快速发现可安装的工作流能力。
 27. 作为平台管理员，我希望配置希望在广场中展示的 GitHub 插件/Skill 来源，以便维护经过挑选的公开目录。
 28. 作为 Skills 使用者，我希望看到由 GitHub 来源解析出的 Skill 信息和安装命令，以便直接从原仓库安装，而不依赖平台托管文件。
-29. 作为 Skills 使用者，我希望复制 `npx skills@latest` 或 Claude 插件安装命令后在本机执行，以便 Skill 安装到本机 Agent 能识别的位置。
+29. 作为 Skills 使用者，我希望复制 `npx skills@latest add` 安装命令后在本机执行，以便 Skill 安装到本机 Agent 能识别的位置。
 30. 作为 Skills 使用者，我希望同一 Skill 尽可能通过通用 Skills 规范被多个 Agent 使用，以便减少为每种 Agent 重复安装和维护的工作。
 31. 作为平台管理员，我希望控制 GitHub 来源中哪些插件/Skills 出现在广场，以便广场内容由管理员策展，而不是自动公开所有发现项。
 32. 作为 Agent 平台使用者，我希望后续能登记 Codex、Claude Code、Pi 等 A2A Agent 并下发任务，以便把多个 Agent 组织成协作流程。
@@ -97,10 +97,11 @@
 
 ### Skills 广场
 
+- GitHub 来源地址的发现边界、无 clone 解析流程与 `skills@1.9.0` 默认发现规则以 [Skills 广场 GitHub 来源解析规格](../20261127-skills-github-discovery.md) 为准。
 - 公共 Skills 可公开浏览；特殊 Skills 仅登录可见，并按普通角色授权过滤。固定管理员角色可见全部特殊 Skills。
-- 管理员登记并策展 GitHub 插件/Skill 来源；平台解析内容以展示条目，但不托管源文件、不提供 Skill 文件下载。安装由用户本地工具直接从 GitHub 来源完成。
+- 管理员登记/策展 GitHub 插件/Skill 来源；平台只解析展示条目，不托管源文件、不下载 Skill 完整内容。安装由用户本地 `skills` CLI 直接从 GitHub 来源完成。
 - 展示页面和安装命令属于产品能力，但具体元数据字段尚未确定，用户明确留待后续讨论。
-- 安装方式方向为 `npx skills@latest` 通用安装器和 Claude 插件安装命令。两者的真实参数、仓库/子目录表达、Agent 兼容信息和解析行为尚未调研；当前不假定安装器可提供哪些元数据。
+- 广场首期以 `npx skills@latest add` 安装命令为准；解析规则对齐 npm `skills@1.9.0`，不启用会要求完整检出仓库的 `--full-depth` 模式。
 - 仓库采用哪个分支、tag 或 commit，以及如何刷新目录版本，留到实施时讨论。平台不替用户选择或下载 Skill 版本。
 - Skill 内容遵循公开的 Agent Skills 规范，不另创一套文件格式。
 
@@ -141,12 +142,12 @@
 - Skills 文件托管、文件下载、代理安装、平台写入用户本机 Agent 目录。
 - 特殊 Skills 的 GitHub 来源集成、导入和完整广场交互属于后续阶段；公开 Skills 不需要登录，特殊 Skills 按本规格进行登录和角色过滤。
 - MCP 搜索、管理测试、管理 API 请求进入首期调用审计。
-- Skills 元数据字段、安装器解析能力、仓库版本固定/刷新策略的具体定案。
+- Skills 页面完整交互与展示字段、来源缓存/刷新时效的具体定案。
 - 最终技术栈、系统架构和代码组织方式；此项属于下一阶段技术选型。
 
 ## Further Notes
 
 - 本文使用以下领域词汇：**服务**是已登记的 MCP 或 REST 下游能力集合；**工具**是服务暴露给 MCP 调用者的单个操作；**角色**是用户可获得的工具授权集合；**调用者**由 API Key 识别；**审计**记录正式工具调用的基本事实。
 - “来源 Agent”可从 MCP 客户端初始化信息取得名称/版本并作辅助标注；该信息由客户端自报，可信度低于 API Key。
-- 本文明确保留为后续讨论的事项：Skills 广场元数据与页面交互、Skills 仓库版本策略、安装器解析字段与实际命令格式、OpenAPI/cURL 导入细节、审计保留周期与额外字段。
-- 本文不做安装器调研。进入实施规划时，再验证 `npx skills@latest` 与 Claude 插件命令可提供的元数据和安装参数，并据此细化 Skills 来源管理契约。
+- 本文明确保留为后续讨论的事项：Skills 广场页面交互与完整元数据、来源缓存/刷新策略、OpenAPI/cURL 导入细节、审计保留周期与额外字段。
+- 2026-11-27 修订：Skills GitHub 来源发现和 `skills@1.9.0` 行为已完成调研，详见[专用规格](../20261127-skills-github-discovery.md)。本规格替代原先“安装器解析能力尚未调研”的条款；规格没有涵盖的来源授权和缓存细节仍待实施前决定。
